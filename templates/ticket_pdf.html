@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Facture</title>
+
+</head>
+<body>
+    <div class="facture-container">
+        <div class="header">Facture</div>
+        <div class="content">
+            <p>Numéro de facture : <strong>{{ ticket.numero }}</strong></p>
+            <p>Date : <strong>{{ ticket.date }}</strong></p>
+            <p>Client : <strong>{{ ticket.client.nom }}</strong></p>
+            <p>Type de Lavage : <strong>{{ ticket.type_lavage.nom }}</strong></p>
+            <p>Vendeur : <strong>{{ ticket.vendeur.nom }}</strong></p>
+            <!-- Ajoutez d'autres détails de la facture ici -->
+        </div>
+        <div class="footer">Merci pour votre entreprise !</div>
+    </div>
+</body>
+</html>

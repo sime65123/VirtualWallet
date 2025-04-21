@@ -1,0 +1,93 @@
+{% comment %} {% load static %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Souscription de Lavage</title>
+</head>
+<body>
+    <h3>Souscription de Lavage reussi</h3>
+    <strong>{{ date }}</strong>
+    <strong>votre email {{ email }}</strong>
+    {{chemin_qr_code_image}}
+    <p style='color:red'>Vous venez de souscrire à un lavage de voyage chez nous .Merci pour la confiance renouvelé.Ci joint votre QR code d'acces</p>
+     <div style="text-align: center;">
+        {% with '../'|add:chemin_qr_code_image as image_static %}
+            <img src="{% static image_static %}" alt="QR Code">
+        {% endwith %}
+        <img src="data:image/png;base64,{{ image_base64 }}" alt="Image Description">
+
+        
+    </div> 
+    <em>Cordialement l'équipe Technique</em>
+</body>
+</html> {% endcomment %}
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Souscription de Lavage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h3 {
+            color: #4CAF50;
+        }
+        .info {
+            margin-bottom: 20px;
+        }
+        .info strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .qr-code-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .footer {
+            font-size: 0.9em;
+            text-align: center;
+            margin-top: 40px;
+            color: #777;
+        }
+        .footer em {
+            font-style: normal;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>Souscription de Lavage réussi</h3>
+        <div class="info">
+            <strong>Date de souscription : {{ date }}</strong>
+            <strong>Email : {{ email }}</strong>
+        </div>
+        <p>Vous venez de souscrire à un lavage de voyage chez nous. Merci pour la confiance renouvelée. Ci-joint votre QR code d'accès :</p>
+        <div class="qr-code-container">
+            
+        </div>
+        <div class="footer">
+            <em>Cordialement, l'équipe Technique</em>
+        </div>
+    </div>
+</body>
+</html>

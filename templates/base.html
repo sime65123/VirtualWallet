@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <title>{% block title %}Virtual Wallet{% endblock %}</title>
+    {% block link %}{% endblock %}
+    <!-- Inclure les fichiers CSS ici -->
+</head>
+<body>
+  
+        {% block header %}
+        <!-- Le contenu spécifique à chaque page sera inséré ici -->
+        {% endblock %}
+        <!-- Contenu de l'en-tête ici -->
+    </header>
+
+    <main>
+        {% block content %}
+        <!-- Le contenu spécifique à chaque page sera inséré ici -->
+        {% endblock %}
+    </main>
+
+    <footer>
+        <!-- Contenu du pied de page ici -->
+    </footer>
+
+
+    <!-- Inclure les fichiers JavaScript ici -->
+</body>
+{% block script%}
+ 
+{% endblock %}
+</html>

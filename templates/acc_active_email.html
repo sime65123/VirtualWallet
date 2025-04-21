@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Activation de Compte</title>
+</head>
+<body>
+    <p>Bonjour {{ user.pseudo }},</p>
+    <p>Veuillez cliquer sur le lien ci-dessous pour activer votre compte :</p>
+    <a href="http://{{ domain }}{% url 'activation' uidb64=uid token=token %}">Activer Mon Compte</a>
+</body>
+</html>

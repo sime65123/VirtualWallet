@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Page d'Accueil{% endblock title %}
+
+{% block content %}
+    <header>
+        <h1>Bienvenue sur notre site !</h1>
+    </header>
+    <nav>
+        <a href="{% url 'page_de_chargement_compte' %}">Charger Son Compte</a>
+        <!-- Autres liens de navigation -->
+    </nav>
+    <section>
+        <p>Ceci est le contenu principal de la page d'accueil.</p>
+        
+        <!-- Autres contenus et éléments de la page -->
+    </section>
+{% endblock content %}
