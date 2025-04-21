@@ -52,7 +52,7 @@ VirtualWallet est une application web qui permet aux clients de s'inscrire, de r
 
 1. **Cloner le dépôt**
    ```
-   git clone [URL_DU_REPO]
+   git clone https://github.com/sime65123/VirtualWallet.git
    cd VirtualWallet
    ```
 
