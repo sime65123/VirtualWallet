@@ -574,43 +574,56 @@ def creneaux_disponibles(request):
 @login_required
 @require_http_methods(["POST"])
 def reserver_horaire(request):
-    """Crée une réservation de créneau pour un lavage souscrit."""
+    if not request.user.is_authenticated:
+        return JsonResponse({'erreur': 'Non connecté'}, status=401)
     try:
-        data         = json.loads(request.body)
-        date_passage = data.get('date_passage')
+        data          = json.loads(request.body)
+        date_passage  = data.get('date_passage')
         heure_passage = data.get('heure_passage')
-        lavage_code  = data.get('lavage_code')  # codeQR du lavage
-        
-        if not all([date_passage, heure_passage, lavage_code]):
-            return JsonResponse({'erreur': 'Données incomplètes'}, status=400)
-        
+
+        if not date_passage or not heure_passage:
+            return JsonResponse({'erreur': 'Date ou heure manquante.'}, status=400)
+
         # Vérifier que le créneau est libre
         if ReservationHoraire.objects.filter(
             date_passage=date_passage,
             heure_passage=heure_passage
         ).exists():
-            return JsonResponse({'erreur': 'Ce créneau est déjà réservé. Choisissez un autre.'}, status=409)
-        
-        # Vérifier que le lavage appartient à cet utilisateur
+            return JsonResponse(
+                {'erreur': 'Ce créneau est déjà réservé. Choisissez un autre horaire.'},
+                status=409
+            )
+
+        # Prendre le dernier lavage souscrit par cet utilisateur
         try:
-            lavage = Lavage.objects.get(codeQR=lavage_code, utilisateur=request.user)
+            lavage = Lavage.objects.filter(
+                utilisateur=request.user
+            ).latest('date')
         except Lavage.DoesNotExist:
-            return JsonResponse({'erreur': 'Lavage introuvable.'}, status=404)
-        
-        # Créer la réservation
+            return JsonResponse(
+                {'erreur': "Aucun lavage trouvé. Souscrivez d'abord à un lavage."},
+                status=404
+            )
+
+        # Vérifier que ce lavage n'a pas déjà une réservation
+        if ReservationHoraire.objects.filter(lavage=lavage).exists():
+            return JsonResponse(
+                {'erreur': 'Votre dernier lavage a déjà un créneau programmé.'},
+                status=409
+            )
+
         reservation = ReservationHoraire.objects.create(
             utilisateur=request.user,
             lavage=lavage,
             date_passage=date_passage,
             heure_passage=heure_passage
         )
-        
+
         return JsonResponse({
             'succes': True,
-            'message': f'Créneau réservé le {date_passage} à {heure_passage}.',
-            'id': reservation.id
+            'message': f'Créneau réservé le {date_passage} à {heure_passage}.'
         })
-    
+
     except Exception as e:
         return JsonResponse({'erreur': str(e)}, status=500)
 

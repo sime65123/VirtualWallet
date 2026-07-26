@@ -433,8 +433,8 @@
             <button class="ww-tab-btn" data-tab="tab-password">
                 <i class="fa fa-lock"></i> Mot de passe
             </button>
-            <button class="ww-tab-btn" data-tab="tab-reservation">
-                <i class="fa fa-calendar"></i> Programmer un lavage
+            <button class="ww-tab-btn" data-tab="tab-reservation" style="position:relative;">
+                <i class="fa fa-clock-o"></i> Programmer un lavage
             </button>
             <button class="ww-tab-btn" data-tab="tab-mes-reservations">
                 <i class="fa fa-list"></i> Mes réservations
@@ -704,9 +704,9 @@ for (var h = 7; h <= 18; h++) {
 
 var creneauSelectionne = null;
 
+// ── Nouveau ──
 document.getElementById('btnVoirCreneaux').addEventListener('click', function() {
     var date = document.getElementById('reservDate').value;
-    var code = document.getElementById('reservLavageCode').value.trim();
 
     if (!date) {
         afficherResultat('ww-alert-warning', 'fa-exclamation-circle', 'Veuillez sélectionner une date.');
@@ -759,10 +759,10 @@ document.getElementById('btnVoirCreneaux').addEventListener('click', function() 
 });
 
 // ── Confirmer réservation ──────────────────────────────────
+// ── Nouveau ──
 document.getElementById('btnConfirmerReserv').addEventListener('click', function() {
-    var date  = document.getElementById('reservDate').value;
-    var code  = document.getElementById('reservLavageCode').value.trim();
-    var btn   = this;
+    var date = document.getElementById('reservDate').value;
+    var btn  = this;
 
     if (!creneauSelectionne) return;
 
