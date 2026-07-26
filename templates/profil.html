@@ -1,161 +1,853 @@
-
 {% extends "base.html" %}
 {% load static %}
+
+{% block title %}Mon compte — Wash Wallet{% endblock %}
+
 {% block link %}
-    <link href="{% static 'css/profil_style.css' %}" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="{% static 'assets/stylesheets/bootstrap.min.css' %}" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<style>
+    /* ── Tokens (cohérents avec le site) ────────────────────── */
+    :root {
+        --primary:   #1734a3;
+        --primary2:  #1248c8;
+        --dark:      #0d1f6e;
+        --accent:    #FFC107;
+        --white:     #ffffff;
+        --bg:        #f4f6fb;
+        --text:      #333333;
+        --text-2:    #666666;
+        --text-3:    #999999;
+        --border:    #e8ecf4;
+        --success:   #28a745;
+        --danger:    #dc3545;
+        --radius:    12px;
+        --shadow:    0 2px 16px rgba(23,52,163,0.09);
+    }
+
+    body { background: var(--bg); font-family: 'Montserrat', sans-serif; color: var(--text); }
+
+    /* ── Topbar reprise de vitrine ──────────────────────────── */
+    .ww-topbar-profil {
+        background: var(--dark);
+        padding: 7px 0;
+        font-size: 12.5px;
+        font-family: 'Montserrat', sans-serif;
+    }
+    .ww-topbar-profil .tp-inner {
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .ww-topbar-profil .tp-item {
+        display: flex; align-items: center; gap: 6px;
+        color: rgba(255,255,255,0.55); font-weight: 500;
+    }
+    .ww-topbar-profil .tp-item i { color: var(--accent); }
+
+    /* ── Navbar profil ──────────────────────────────────────── */
+    .ww-navbar-profil {
+        background: var(--white);
+        border-bottom: 3px solid var(--primary);
+        box-shadow: var(--shadow);
+        padding: 0;
+        position: sticky; top: 0; z-index: 100;
+    }
+    .ww-navbar-profil .nav-inner {
+        display: flex; align-items: center; justify-content: space-between;
+        height: 72px;
+    }
+    .ww-navbar-profil .brand {
+        display: flex; align-items: center; gap: 10px;
+        text-decoration: none !important;
+    }
+    .ww-navbar-profil .brand img { height: 44px; width: auto; object-fit: contain; }
+    .ww-navbar-profil .brand-name {
+        font-size: 17px; font-weight: 800; color: var(--primary);
+    }
+    .ww-navbar-profil .brand-sub {
+        font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .ww-back-btn {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 8px 18px;
+        background: var(--primary);
+        color: #fff !important;
+        border-radius: 8px;
+        font-size: 13px; font-weight: 600;
+        text-decoration: none !important;
+        transition: background 0.2s, transform 0.15s;
+        box-shadow: 0 3px 12px rgba(23,52,163,0.25);
+    }
+    .ww-back-btn:hover { background: var(--primary2); transform: translateY(-1px); }
+
+    /* ── Page layout ────────────────────────────────────────── */
+    .profil-page { padding: 36px 0 60px; }
+
+    /* ── Hero utilisateur ───────────────────────────────────── */
+    .user-hero {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--dark) 100%);
+        border-radius: var(--radius);
+        padding: 28px 28px 24px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 24px rgba(23,52,163,0.25);
+    }
+    .user-hero::before {
+        content: '';
+        position: absolute; top: -30px; right: -30px;
+        width: 160px; height: 160px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.05);
+    }
+    .user-hero::after {
+        content: '';
+        position: absolute; bottom: -40px; right: 80px;
+        width: 100px; height: 100px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.04);
+    }
+    .user-avatar-big {
+        width: 72px; height: 72px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        border: 3px solid rgba(255,255,255,0.3);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 28px; font-weight: 800;
+        color: #fff;
+        flex-shrink: 0;
+        z-index: 1;
+    }
+    .user-hero-info { flex: 1; z-index: 1; }
+    .user-hero-name { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .user-hero-email { font-size: 13px; color: rgba(255,255,255,0.65); margin-bottom: 12px; }
+    .user-hero-badges { display: flex; gap: 10px; flex-wrap: wrap; }
+    .hero-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 99px;
+        padding: 4px 12px;
+        font-size: 12px; font-weight: 600; color: #fff;
+    }
+    .hero-badge i { font-size: 12px; }
+    .solde-hero {
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: var(--radius);
+        padding: 16px 20px;
+        text-align: center;
+        z-index: 1;
+        min-width: 160px;
+    }
+    .solde-hero-label { font-size: 11px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .solde-hero-value { font-size: 26px; font-weight: 800; color: var(--accent); line-height: 1; }
+    .solde-hero-unit { font-size: 13px; color: rgba(255,255,255,0.6); }
+
+    /* ── Tabs ───────────────────────────────────────────────── */
+    .ww-tabs {
+        display: flex; gap: 4px;
+        background: #fff;
+        border-radius: var(--radius);
+        padding: 6px;
+        box-shadow: var(--shadow);
+        margin-bottom: 24px;
+        border: 1px solid var(--border);
+        flex-wrap: wrap;
+    }
+    .ww-tab-btn {
+        display: flex; align-items: center; gap: 7px;
+        padding: 10px 18px;
+        border-radius: 8px;
+        border: none;
+        background: none;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 13px; font-weight: 600;
+        color: var(--text-2);
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .ww-tab-btn:hover { background: rgba(23,52,163,0.05); color: var(--primary); }
+    .ww-tab-btn.active { background: var(--primary); color: #fff; }
+    .ww-tab-btn i { font-size: 14px; }
+
+    /* ── Cards ──────────────────────────────────────────────── */
+    .ww-card {
+        background: #fff;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    .ww-card-head {
+        padding: 16px 22px;
+        border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px;
+    }
+    .ww-card-title {
+        font-size: 14px; font-weight: 700; color: var(--text);
+        display: flex; align-items: center; gap: 8px;
+    }
+    .ww-card-title i { color: var(--primary); font-size: 15px; }
+    .ww-card-body { padding: 22px; }
+
+    /* ── Formulaire ─────────────────────────────────────────── */
+    .ww-form-label {
+        font-size: 11.5px; font-weight: 600;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 7px;
+        display: block;
+    }
+    .ww-form-group { margin-bottom: 18px; }
+    .ww-input {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 11px 14px;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 14px; font-weight: 500;
+        color: var(--text);
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .ww-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(23,52,163,0.10);
+        background: #fff;
+    }
+    .ww-input[readonly] { color: var(--text-2); cursor: default; }
+    .ww-input[readonly]:focus { border-color: var(--border); box-shadow: none; background: var(--bg); }
+
+    /* ── Boutons ────────────────────────────────────────────── */
+    .ww-btn {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 13px; font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none !important;
+    }
+    .ww-btn-primary {
+        background: var(--primary);
+        color: #fff;
+        box-shadow: 0 3px 14px rgba(23,52,163,0.25);
+    }
+    .ww-btn-primary:hover { background: var(--primary2); transform: translateY(-1px); color: #fff; }
+    .ww-btn-ghost {
+        background: var(--bg);
+        color: var(--text-2);
+        border: 1px solid var(--border);
+    }
+    .ww-btn-ghost:hover { background: #eaeef8; color: var(--primary); }
+
+    /* ── Alertes ────────────────────────────────────────────── */
+    .ww-alert {
+        display: flex; align-items: flex-start; gap: 10px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 13px; font-weight: 500;
+        margin-bottom: 16px;
+    }
+    .ww-alert i { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+    .ww-alert-success { background: #e8f8f0; color: #1a7a42; border: 1px solid #b2dfc5; }
+    .ww-alert-success i { color: #28a745; }
+    .ww-alert-warning { background: #fff8e1; color: #856404; border: 1px solid #ffe08a; }
+    .ww-alert-warning i { color: var(--accent); }
+    .ww-alert-danger  { background: #fdeaea; color: #a01428; border: 1px solid #f5b7b1; }
+    .ww-alert-danger i { color: var(--danger); }
+
+    /* ── Grille créneaux ────────────────────────────────────── */
+    .creneaux-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+        gap: 8px;
+        margin-top: 16px;
+    }
+    .creneau-btn {
+        padding: 10px 6px;
+        border-radius: 8px;
+        border: 1.5px solid var(--border);
+        background: #fff;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 13px; font-weight: 600;
+        color: var(--text);
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.15s;
+    }
+    .creneau-btn:hover:not(.reserved):not(.selected) {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(23,52,163,0.04);
+    }
+    .creneau-btn.selected {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+    }
+    .creneau-btn.reserved {
+        background: #f5f5f5;
+        border-color: #ddd;
+        color: #bbb;
+        cursor: not-allowed;
+        text-decoration: line-through;
+    }
+
+    /* ── Table réservations ─────────────────────────────────── */
+    .ww-table { width: 100%; border-collapse: collapse; }
+    .ww-table th {
+        padding: 10px 14px;
+        font-size: 11px; font-weight: 700;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        background: var(--bg);
+    }
+    .ww-table td {
+        padding: 13px 14px;
+        font-size: 13.5px;
+        color: var(--text-2);
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+    }
+    .ww-table tr:last-child td { border-bottom: none; }
+    .ww-table tbody tr:hover { background: rgba(23,52,163,0.02); }
+
+    /* ── Tab panes ──────────────────────────────────────────── */
+    .ww-pane { display: none; }
+    .ww-pane.active { display: block; }
+
+    /* ── Empty state ────────────────────────────────────────── */
+    .ww-empty {
+        text-align: center; padding: 40px 20px; color: var(--text-3);
+    }
+    .ww-empty i { font-size: 40px; margin-bottom: 10px; display: block; }
+    .ww-empty p { font-size: 13px; }
+
+    /* ── Spinner ────────────────────────────────────────────── */
+    .ww-spinner {
+        display: inline-block;
+        width: 18px; height: 18px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+        .user-hero { flex-direction: column; text-align: center; }
+        .user-hero-badges { justify-content: center; }
+        .solde-hero { width: 100%; }
+        .profil-page { padding: 20px 0 40px; }
+    }
+</style>
 {% endblock %}
 
+{% block header %}
+<!-- Topbar -->
+<div class="ww-topbar-profil">
+    <div class="container">
+        <div class="tp-inner">
+            <div class="tp-item"><i class="fa fa-phone"></i><span>+237 671 817 484</span></div>
+            <div class="tp-item"><i class="fa fa-envelope-o"></i><span>sime.appolos@icloud.com</span></div>
+        </div>
+    </div>
+</div>
 
+<!-- Navbar -->
+<nav class="ww-navbar-profil">
+    <div class="container">
+        <div class="nav-inner">
+            <a href="{% url 'vitrine' %}" class="brand">
+                <img src="{% static 'assets/images/logo.png' %}" alt="Wash Wallet">
+                <div>
+                    <div class="brand-name">WashWallet</div>
+                    <div class="brand-sub">Paiement en ligne</div>
+                </div>
+            </a>
+            <a href="{% url 'vitrine' %}" class="ww-back-btn">
+                <i class="fa fa-arrow-left"></i> Retour au site
+            </a>
+        </div>
+    </div>
+</nav>
+{% endblock %}
 
 {% block content %}
-        <!-- Le contenu spécifique à chaque page sera inséré ici -->
+<div class="profil-page">
+    <div class="container">
 
-    <div class="container light-style flex-grow-1 container-p-y">
-        <h4 class="font-weight-bold py-3 mb-4">
-            Parametres de compte
-        </h4>
-        <div class="card overflow-hidden">
-            <div class="row no-gutters row-bordered row-border-light">
-                <div class="col-md-3 pt-0">
-                    <div class="list-group list-group-flush account-settings-links">
-                        <a class="list-group-item list-group-item-action active" data-toggle="list"
-                            href="#account-general">General</a>
-                        <a class="list-group-item list-group-item-action" data-toggle="list"
-                            href="#account-change-password">Changer le mot de passe</a>
-                        {% comment %} <a class="list-group-item list-group-item-action" data-toggle="list"
-                            href="#account-info">Info</a> {% endcomment %}
+        <!-- Messages Django -->
+        {% if messages %}
+            {% for message in messages %}
+            <div class="ww-alert {% if message.tags == 'success' %}ww-alert-success{% elif message.tags == 'error' %}ww-alert-danger{% else %}ww-alert-warning{% endif %}">
+                <i class="fa {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Hero -->
+        <div class="user-hero">
+            <div class="user-avatar-big" id="heroAvatar">{{ user.pseudo|first|upper }}</div>
+            <div class="user-hero-info">
+                <div class="user-hero-name">{{ user.pseudo }}</div>
+                <div class="user-hero-email">{{ user.email }}</div>
+                <div class="user-hero-badges">
+                    <div class="hero-badge"><i class="fa fa-map-marker"></i> {{ user.ville_residence }}</div>
+                    <div class="hero-badge"><i class="fa fa-phone"></i> {{ user.numero_telephone }}</div>
+                    <div class="hero-badge"><i class="fa fa-check-circle"></i> Compte vérifié</div>
+                </div>
+            </div>
+            <div class="solde-hero">
+                <div class="solde-hero-label">Solde</div>
+                <div class="solde-hero-value">{{ solde|floatformat:0 }}</div>
+                <div class="solde-hero-unit">XAF</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="ww-tabs">
+            <button class="ww-tab-btn active" data-tab="tab-general">
+                <i class="fa fa-user"></i> Mon profil
+            </button>
+            <button class="ww-tab-btn" data-tab="tab-password">
+                <i class="fa fa-lock"></i> Mot de passe
+            </button>
+            <button class="ww-tab-btn" data-tab="tab-reservation">
+                <i class="fa fa-calendar"></i> Programmer un lavage
+            </button>
+            <button class="ww-tab-btn" data-tab="tab-mes-reservations">
+                <i class="fa fa-list"></i> Mes réservations
+            </button>
+        </div>
+
+        <!-- ══ TAB 1 : Profil ══════════════════════════════════ -->
+        <div class="ww-pane active" id="tab-general">
+            <div class="ww-card">
+                <div class="ww-card-head">
+                    <div class="ww-card-title"><i class="fa fa-user"></i> Informations personnelles</div>
+                </div>
+                <div class="ww-card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="ww-form-group">
+                                <label class="ww-form-label">Pseudo</label>
+                                <input class="ww-input" type="text" value="{{ user.pseudo }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="ww-form-group">
+                                <label class="ww-form-label">Adresse e-mail</label>
+                                <input class="ww-input" type="text" value="{{ user.email }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="ww-form-group">
+                                <label class="ww-form-label">Ville de résidence</label>
+                                <input class="ww-input" type="text" value="{{ user.ville_residence }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="ww-form-group">
+                                <label class="ww-form-label">Numéro de téléphone</label>
+                                <input class="ww-input" type="text" value="{{ user.numero_telephone }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ww-alert ww-alert-success">
+                        <i class="fa fa-check-circle"></i>
+                        <span>Votre adresse e-mail a été confirmée. Votre compte est actif.</span>
                     </div>
                 </div>
-                <div class="col-md-9">
-                    <div class="tab-content">
-                        <div class="tab-pane fade active show" id="account-general">
-                            {% comment %} <div class="card-body media align-items-center">
-                                <img src="https://bootdey.com/img/Content/avatar/avatar1.png" alt
-                                    class="d-block ui-w-80">
-                                <div class="media-body ml-4">
-                                    <label class="btn btn-outline-primary">
-                                        Charger une photo
-                                        <input type="file" class="account-settings-fileinput">
-                                    </label> &nbsp;
-                                    <button type="button" class="btn btn-default md-btn-flat">Réinitialiser</button>
-                                    <div class="text-light small mt-1">JPG, GIF ou PNG autorisés. Taille maximale de 800K</div>
-                                </div>
-                            </div> {% endcomment %}
-                            <hr class="border-light m-0">
-                            {% if messages %}
-                            <ul class="messages">
-                                {% for message in messages %}
-                                <div class="alert alert-warning mt-3"> <li>{{ message }}</li></div>
-                                {% endfor %}
-                            </ul>
-                             {% endif %}
-                            <form action="">
-                                <div class="card-body">
-                                    <div class="form-group">
-                                        <label class="form-label">Pseudo</label>
-                                        <input type="text" class="form-control mb-1" value="{{user.pseudo}}" readonly>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">E-mail</label>
-                                        <input type="text" class="form-control mb-1" value="{{user.email}}" readonly>
-                                        <div class="alert alert-success mt-3">
-                                            Your email has been confirmed.<!-- <br>
-                                            <a href="javascript:void(0)">Resend confirmation</a> -->
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Ville de residence</label>
-                                        <input type="text" class="form-control" value="{{user.ville_residence}}" readonly>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Numéro de telephone</label>
-                                        <input type="text" class="form-control" value="{{user.numero_telephone}}" readonly>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Solde de votre compte</label>
-                                        <input type="text" class="form-control" value="{{solde}}" readonly>
-                                   
+            </div>
 
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                       
-                        
-                        <div class="tab-pane fade" id="account-change-password">
-                           
-                            <form action="{% url 'update_password' %}" method="POST">
-                                 {% csrf_token %}
-                                <div class="card-body pb-2">
-                                    <div class="form-group">
-                                        <label class="form-label">Mot de passe actuel</label>
-                                        <input type="password" class="form-control" name="ancien_mot_de_passe">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Nouveau mot de passe</label>
-                                        <input type="password" class="form-control" name="nouveau_mot_de_passe">
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Confirmation du nouveau de passe</label>
-                                        <input type="password" class="form-control" name="confirmation_mot_de_passe">
-                                    </div>
-                                    <input type="submit" class="btn btn-primary" value="Mettre A Jour">
-                                  
-                                    <div>
-
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="tab-pane fade" id="account-info">
-                            <div class="card-body pb-2">
-                                <div class="form-group">
-                                    <label class="form-label">Date de naissance</label>
-                                    <input type="text" class="form-control" value="May 3, 1995">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Lieu</label>
-                                    <select class="custom-select">
-                                        <option selected>Bandjoun</option>
-                                        <option>Yaounde</option>
-                                        <option>Bafoussam</option>
-                                        <option>Bangangté</option>
-                                    </select>
-                                </div>
+            <!-- Solde + recharge -->
+            <div class="ww-card">
+                <div class="ww-card-head">
+                    <div class="ww-card-title"><i class="fa fa-wallet"></i> Mon compte Wash Wallet</div>
+                    <button class="ww-btn ww-btn-primary" data-toggle="modal" data-target="#rechargeModal">
+                        <i class="fa fa-plus-circle"></i> Recharger
+                    </button>
+                </div>
+                <div class="ww-card-body">
+                    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+                        <div>
+                            <div style="font-size:11px; font-weight:600; color:var(--text-3); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">Solde disponible</div>
+                            <div style="font-size:36px; font-weight:800; color:var(--primary); line-height:1;">
+                                {{ solde|floatformat:0 }} <span style="font-size:18px; color:var(--text-3);">XAF</span>
                             </div>
-                            <hr class="border-light m-0">
-                            <div class="card-body pb-2">
-                                <h5 class="mb-4">Contacts</h5>
-                                <div class="form-group">
-                                    <label class="form-label">Phone</label>
-                                    <input type="text" class="form-control" value="+0 (123) 456 7891">
-                                </div>
-                            </div>
-                            <button type="button" class="btn btn-primary">Sauvegarder</button>&nbsp;
-                            <button type="button" class="btn btn-default">Annuler</button>
-                            <div>
-
+                        </div>
+                        <div style="flex:1; min-width:220px;">
+                            <div class="ww-alert ww-alert-warning" style="margin-bottom:0;">
+                                <i class="fa fa-info-circle"></i>
+                                <span>Le solde est débité lors de chaque souscription à un lavage. Rechargez via Orange Money ou MTN Mobile Money.</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- ══ TAB 2 : Mot de passe ════════════════════════════ -->
+        <div class="ww-pane" id="tab-password">
+            <div class="ww-card">
+                <div class="ww-card-head">
+                    <div class="ww-card-title"><i class="fa fa-lock"></i> Changer le mot de passe</div>
+                </div>
+                <div class="ww-card-body">
+                    <form action="{% url 'update_password' %}" method="POST">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="ww-form-group">
+                                    <label class="ww-form-label">Mot de passe actuel</label>
+                                    <input class="ww-input" type="password" name="ancien_mot_de_passe" placeholder="••••••••" required>
+                                </div>
+                                <div class="ww-form-group">
+                                    <label class="ww-form-label">Nouveau mot de passe</label>
+                                    <input class="ww-input" type="password" name="nouveau_mot_de_passe" placeholder="••••••••" required>
+                                </div>
+                                <div class="ww-form-group">
+                                    <label class="ww-form-label">Confirmation du nouveau mot de passe</label>
+                                    <input class="ww-input" type="password" name="confirmation_mot_de_passe" placeholder="••••••••" required>
+                                </div>
+                                <button type="submit" class="ww-btn ww-btn-primary">
+                                    <i class="fa fa-save"></i> Mettre à jour
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ TAB 3 : Programmer un lavage ═══════════════════ -->
+        <div class="ww-pane" id="tab-reservation">
+            <div class="ww-card">
+                <div class="ww-card-head">
+                    <div class="ww-card-title"><i class="fa fa-calendar-plus-o"></i> Programmer l'heure de votre passage</div>
+                </div>
+                <div class="ww-card-body">
+                    <div class="ww-alert ww-alert-warning">
+                        <i class="fa fa-info-circle"></i>
+                        <span>Après avoir souscrit à un lavage, vous pouvez programmer ici votre heure de passage. Chaque créneau est unique : une fois réservé, il n'est plus disponible pour les autres utilisateurs.</span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-5">
+                            <div class="ww-alert ww-alert-success">
+                                <i class="fa fa-check-circle"></i>
+                                <span>La réservation sera automatiquement associée à votre <strong>dernier lavage souscrit</strong>. Assurez-vous d'avoir souscrit un lavage avant de programmer votre passage.</span>
+                            </div>
+                            <div class="ww-form-group">
+                                <label class="ww-form-label">Date du passage</label>
+                                <input class="ww-input" type="date" id="reservDate"
+                                    min="{{ today }}"
+                                    max="{{ max_date }}">
+                            </div>
+                            <button class="ww-btn ww-btn-primary" id="btnVoirCreneaux" style="width:100%;">
+                                <i class="fa fa-search"></i> Voir les créneaux disponibles
+                            </button>
+                        </div>
+
+                        <div class="col-md-7">
+                            <div id="creneauxZone" style="display:none;">
+                                <label class="ww-form-label">Choisissez un créneau</label>
+                                <div style="font-size:12px; color:var(--text-3); margin-bottom:8px;">
+                                    <span style="display:inline-block; width:14px; height:14px; border-radius:3px; background:var(--primary); vertical-align:middle; margin-right:4px;"></span> Sélectionné
+                                    <span style="display:inline-block; width:14px; height:14px; border-radius:3px; background:#f5f5f5; border:1px solid #ddd; vertical-align:middle; margin-left:10px; margin-right:4px;"></span> Déjà réservé
+                                </div>
+                                <div class="creneaux-grid" id="creneauxGrid"></div>
+
+                                <div id="confirmZone" style="display:none; margin-top:20px;">
+                                    <div class="ww-alert ww-alert-warning">
+                                        <i class="fa fa-clock-o"></i>
+                                        <span>Créneau sélectionné : <strong id="creneauChoisi"></strong></span>
+                                    </div>
+                                    <button class="ww-btn ww-btn-primary" id="btnConfirmerReserv" style="width:100%;">
+                                        <i class="fa fa-check"></i> Confirmer cette réservation
+                                    </button>
+                                </div>
+
+                                <div id="reservResultat" style="margin-top:12px;"></div>
+                            </div>
+
+                            <div id="creneauxLoading" style="display:none; text-align:center; padding:30px 0; color:var(--text-3);">
+                                <i class="fa fa-spinner fa-spin" style="font-size:24px; margin-bottom:8px; display:block;"></i>
+                                Chargement des créneaux...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ TAB 4 : Mes réservations ════════════════════════ -->
+        <div class="ww-pane" id="tab-mes-reservations">
+            <div class="ww-card">
+                <div class="ww-card-head">
+                    <div class="ww-card-title"><i class="fa fa-list-alt"></i> Mes réservations de créneaux</div>
+                    <button class="ww-btn ww-btn-ghost" id="btnRefreshReservations">
+                        <i class="fa fa-refresh"></i> Actualiser
+                    </button>
+                </div>
+                <div id="reservationsContent">
+                    <div class="ww-empty">
+                        <i class="fa fa-calendar-o"></i>
+                        <p>Chargement de vos réservations...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /container -->
+</div><!-- /profil-page -->
+
+<!-- Modal recharge (repris de vitrine.html) -->
+<div class="modal fade" id="rechargeModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content" style="border-radius:12px; border:1px solid rgba(23,52,163,0.15);">
+            <div class="modal-header" style="background:var(--primary); border-radius:12px 12px 0 0;">
+                <h5 class="modal-title" style="color:#fff; font-family:'Montserrat',sans-serif; font-weight:700;">
+                    <i class="fa fa-plus-circle"></i> Recharger mon compte
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span style="color:#fff;">×</span>
+                </button>
+            </div>
+            <div class="modal-body" style="padding:24px;">
+                <form id="rechargeForm" method="POST" action="{% url 'page_de_chargement_compte' %}">
+                    {% csrf_token %}
+                    <div class="ww-form-group">
+                        <label class="ww-form-label">Numéro émetteur (Orange / MTN)</label>
+                        <input type="tel" class="ww-input" name="numero_emetteur" placeholder="6XX XXX XXX" required>
+                    </div>
+                    <div class="ww-form-group">
+                        <label class="ww-form-label">Montant (XAF)</label>
+                        <input type="number" class="ww-input" name="montant" placeholder="Ex: 5000" min="500" required>
+                    </div>
+                    <div class="d-flex gap-2" style="gap:10px;">
+                        <button type="button" class="ww-btn ww-btn-ghost" data-dismiss="modal">Annuler</button>
+                        <button type="submit" class="ww-btn ww-btn-primary" style="flex:1;">
+                            <i class="fa fa-credit-card"></i> Valider le paiement
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-  
+</div>
+
 {% endblock %}
-{% block script%}
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
-<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.0/dist/js/bootstrap.bundle.min.js"></script>
-<script type="text/javascript">
+{% block script %}
+<script src="{% static 'assets/javascript/jquery-3.5.1.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
 
+<script>
+// ── Tabs ───────────────────────────────────────────────────
+document.querySelectorAll('.ww-tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        // Désactiver tous
+        document.querySelectorAll('.ww-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.ww-pane').forEach(p => p.classList.remove('active'));
+        // Activer celui cliqué
+        btn.classList.add('active');
+        var target = btn.getAttribute('data-tab');
+        document.getElementById(target).classList.add('active');
+        // Charger les réservations si onglet activé
+        if (target === 'tab-mes-reservations') {
+            chargerReservations();
+        }
+    });
+});
+
+// ── CSRF helper ────────────────────────────────────────────
+function getCsrf() {
+    var name = 'csrftoken';
+    var val = null;
+    document.cookie.split(';').forEach(function(c) {
+        c = c.trim();
+        if (c.startsWith(name + '='))
+            val = decodeURIComponent(c.substring(name.length + 1));
+    });
+    return val;
+}
+
+// ── Créneaux disponibles ───────────────────────────────────
+// Horaires de la laverie : 7h à 18h, toutes les 30 minutes
+var TOUS_CRENEAUX = [];
+for (var h = 7; h <= 18; h++) {
+    TOUS_CRENEAUX.push((h < 10 ? '0' + h : h) + ':00');
+    if (h < 18) TOUS_CRENEAUX.push((h < 10 ? '0' + h : h) + ':30');
+}
+
+var creneauSelectionne = null;
+
+document.getElementById('btnVoirCreneaux').addEventListener('click', function() {
+    var date = document.getElementById('reservDate').value;
+    var code = document.getElementById('reservLavageCode').value.trim();
+
+    if (!date) {
+        afficherResultat('ww-alert-warning', 'fa-exclamation-circle', 'Veuillez sélectionner une date.');
+        return;
+    }
+
+    document.getElementById('creneauxZone').style.display = 'none';
+    document.getElementById('creneauxLoading').style.display = 'block';
+    document.getElementById('reservResultat').innerHTML = '';
+
+    fetch('/emailApp/creneaux/?date=' + date, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        document.getElementById('creneauxLoading').style.display = 'none';
+        document.getElementById('creneauxZone').style.display = 'block';
+        document.getElementById('confirmZone').style.display = 'none';
+        creneauSelectionne = null;
+
+        var grid = document.getElementById('creneauxGrid');
+        grid.innerHTML = '';
+        var reserves = data.reserves || [];
+
+        TOUS_CRENEAUX.forEach(function(heure) {
+            var btn = document.createElement('button');
+            btn.className = 'creneau-btn' + (reserves.includes(heure) ? ' reserved' : '');
+            btn.textContent = heure;
+            if (!reserves.includes(heure)) {
+                btn.addEventListener('click', function() {
+                    // Désélectionner tous
+                    document.querySelectorAll('.creneau-btn').forEach(function(b) {
+                        b.classList.remove('selected');
+                    });
+                    btn.classList.add('selected');
+                    creneauSelectionne = heure;
+                    document.getElementById('creneauChoisi').textContent = date + ' à ' + heure;
+                    document.getElementById('confirmZone').style.display = 'block';
+                });
+            } else {
+                btn.disabled = true;
+            }
+            grid.appendChild(btn);
+        });
+    })
+    .catch(function() {
+        document.getElementById('creneauxLoading').style.display = 'none';
+        afficherResultat('ww-alert-danger', 'fa-times-circle', 'Erreur de connexion au serveur. Réessayez.');
+    });
+});
+
+// ── Confirmer réservation ──────────────────────────────────
+document.getElementById('btnConfirmerReserv').addEventListener('click', function() {
+    var date  = document.getElementById('reservDate').value;
+    var code  = document.getElementById('reservLavageCode').value.trim();
+    var btn   = this;
+
+    if (!creneauSelectionne) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="ww-spinner"></span> Réservation en cours...';
+
+    fetch('/emailApp/reserver/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrf(),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            date_passage:  date,
+            heure_passage: creneauSelectionne
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa fa-check"></i> Confirmer cette réservation';
+        if (data.succes) {
+            document.getElementById('confirmZone').style.display = 'none';
+            afficherResultat(
+                'ww-alert-success',
+                'fa-check-circle',
+                'Réservation confirmée ! Votre passage est programmé le ' +
+                date + ' à ' + creneauSelectionne + '.'
+            );
+            creneauSelectionne = null;
+            // Rafraîchir la grille
+            document.getElementById('btnVoirCreneaux').click();
+        } else {
+            afficherResultat('ww-alert-danger', 'fa-times-circle', data.erreur || 'Erreur lors de la réservation.');
+        }
+    })
+    .catch(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa fa-check"></i> Confirmer cette réservation';
+        afficherResultat('ww-alert-danger', 'fa-times-circle', 'Erreur réseau. Réessayez.');
+    });
+});
+
+function afficherResultat(cls, ico, msg) {
+    document.getElementById('reservResultat').innerHTML =
+        '<div class="ww-alert ' + cls + '"><i class="fa ' + ico + '"></i><span>' + msg + '</span></div>';
+}
+
+// ── Charger mes réservations ───────────────────────────────
+function chargerReservations() {
+    var zone = document.getElementById('reservationsContent');
+    zone.innerHTML = '<div class="ww-empty"><i class="fa fa-spinner fa-spin"></i><p>Chargement...</p></div>';
+
+    fetch('/emailApp/mes_reservations/')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var reservations = data.reservations || [];
+            if (reservations.length === 0) {
+                zone.innerHTML = '<div class="ww-empty"><i class="fa fa-calendar-o"></i><p>Vous n\'avez aucune réservation pour le moment. Souscrivez d\'abord à un lavage puis programmez votre passage.</p></div>';
+                return;
+            }
+            var html = '<div style="overflow-x:auto;"><table class="ww-table"><thead><tr>' +
+                '<th>Date</th><th>Heure</th><th>Code lavage</th></tr></thead><tbody>';
+            reservations.forEach(function(r) {
+                html += '<tr><td><strong>' + r.date_passage + '</strong></td>' +
+                    '<td><span style="background:rgba(23,52,163,0.08);color:#1734a3;padding:3px 10px;border-radius:99px;font-weight:600;font-size:13px;">' +
+                    r.heure_passage + '</span></td>' +
+                    '<td><code style="font-size:11px;color:#999;">' + r.lavage_code.substring(0,20) + '…</code></td></tr>';
+            });
+            html += '</tbody></table></div>';
+            zone.innerHTML = html;
+        })
+        .catch(function() {
+            zone.innerHTML = '<div class="ww-empty"><i class="fa fa-times-circle"></i><p>Erreur lors du chargement.</p></div>';
+        });
+}
+
+document.getElementById('btnRefreshReservations').addEventListener('click', chargerReservations);
+
+// Définir date min pour la réservation (aujourd'hui)
+var today = new Date();
+var yyyy = today.getFullYear();
+var mm = String(today.getMonth() + 1).padStart(2, '0');
+var dd = String(today.getDate()).padStart(2, '0');
+document.getElementById('reservDate').min = yyyy + '-' + mm + '-' + dd;
 </script>
-
- 
 {% endblock %}
-
-
-</html>

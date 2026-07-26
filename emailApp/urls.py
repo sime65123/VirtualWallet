@@ -13,10 +13,13 @@ urlpatterns = [
     path('logout_view', views.logout_view, name='logout_view'),
     path('create-account/<str:email>/', views.create_view, name='create-account'),
     path('profil', views.profil, name='profil'),
-    path(' update_password', views.changer_mot_de_passe, name='update_password'),
+    path('update_password', views.changer_mot_de_passe, name='update_password'),
 
-   
-
+    # Nouvelles URLs
+    path('profil_solde_json/', views.profil_solde_json, name='profil_solde_json'),
+    path('creneaux/', views.creneaux_disponibles, name='creneaux_disponibles'),
+    path('reserver/', views.reserver_horaire, name='reserver_horaire'),
+    path('mes_reservations/', views.mes_reservations, name='mes_reservations'),
 
    
 

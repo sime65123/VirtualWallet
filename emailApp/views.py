@@ -145,14 +145,26 @@ def home(request):
 
 
 #zjrf irmp wkdk ydrb
+
 def profil(request):
-    user=request.user
-    solde=Compte.objects.get(utilisateur=user).solde
-    context={
-        'solde':solde
-    }
-    # Vous pouvez ajouter de la logique supplémentaire ici si nécessaire
-    return render(request, 'profil.html',context)
+    from django.utils import timezone
+    import datetime as dt
+    user = request.user
+    try:
+        compte = Compte.objects.get(utilisateur=user)
+        solde = compte.solde
+    except Compte.DoesNotExist:
+        compte = Compte.objects.create(utilisateur=user, solde=0)
+        solde = 0
+
+    today = timezone.now().date()
+    max_date = today + dt.timedelta(days=30)
+
+    return render(request, 'profil.html', {
+        'solde':    solde,
+        'today':    today.strftime('%Y-%m-%d'),
+        'max_date': max_date.strftime('%Y-%m-%d'),
+    })
 
 
 from django.shortcuts import render, redirect
@@ -522,5 +534,101 @@ def changer_mot_de_passe(request):
             messages.error(request, "L'ancien mot de passe est incorrect.")
             print("-------------------------------------------------ok3")
             return redirect('profil')
+
+
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def profil_solde_json(request):
+    try:
+        compte = Compte.objects.get(utilisateur=request.user)
+        return JsonResponse({'solde': float(compte.solde)})
+    except Compte.DoesNotExist:
+        return JsonResponse({'solde': 0})
+
+
+
+import json
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from .models import ReservationHoraire, Lavage
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def creneaux_disponibles(request):
+    """Retourne les créneaux déjà réservés pour une date donnée."""
+    date = request.GET.get('date')
+    if not date:
+        return JsonResponse({'erreur': 'Date manquante'}, status=400)
+    
+    reserves = ReservationHoraire.objects.filter(
+        date_passage=date
+    ).values_list('heure_passage', flat=True)
+    
+    # Convertir en liste de strings "HH:MM"
+    reserves_list = [h.strftime('%H:%M') for h in reserves]
+    return JsonResponse({'reserves': reserves_list})
+
+
+@login_required
+@require_http_methods(["POST"])
+def reserver_horaire(request):
+    """Crée une réservation de créneau pour un lavage souscrit."""
+    try:
+        data         = json.loads(request.body)
+        date_passage = data.get('date_passage')
+        heure_passage = data.get('heure_passage')
+        lavage_code  = data.get('lavage_code')  # codeQR du lavage
+        
+        if not all([date_passage, heure_passage, lavage_code]):
+            return JsonResponse({'erreur': 'Données incomplètes'}, status=400)
+        
+        # Vérifier que le créneau est libre
+        if ReservationHoraire.objects.filter(
+            date_passage=date_passage,
+            heure_passage=heure_passage
+        ).exists():
+            return JsonResponse({'erreur': 'Ce créneau est déjà réservé. Choisissez un autre.'}, status=409)
+        
+        # Vérifier que le lavage appartient à cet utilisateur
+        try:
+            lavage = Lavage.objects.get(codeQR=lavage_code, utilisateur=request.user)
+        except Lavage.DoesNotExist:
+            return JsonResponse({'erreur': 'Lavage introuvable.'}, status=404)
+        
+        # Créer la réservation
+        reservation = ReservationHoraire.objects.create(
+            utilisateur=request.user,
+            lavage=lavage,
+            date_passage=date_passage,
+            heure_passage=heure_passage
+        )
+        
+        return JsonResponse({
+            'succes': True,
+            'message': f'Créneau réservé le {date_passage} à {heure_passage}.',
+            'id': reservation.id
+        })
+    
+    except Exception as e:
+        return JsonResponse({'erreur': str(e)}, status=500)
+
+
+@login_required
+def mes_reservations(request):
+    """Retourne les réservations de l'utilisateur connecté."""
+    reservations = ReservationHoraire.objects.filter(
+        utilisateur=request.user
+    ).select_related('lavage').order_by('date_passage', 'heure_passage')
+    
+    data = [{
+        'id':           r.id,
+        'date_passage': r.date_passage.strftime('%d/%m/%Y'),
+        'heure_passage': r.heure_passage.strftime('%H:%M'),
+        'lavage_code':  r.lavage.codeQR,
+    } for r in reservations]
+    
+    return JsonResponse({'reservations': data})
 
 

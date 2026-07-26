@@ -151,3 +151,20 @@ class Transaction(models.Model):
 
 class Ville(models.Model):
     nom=models.CharField(max_length=50)
+    
+    
+
+class ReservationHoraire(models.Model):
+    utilisateur  = models.ForeignKey(Utilisateur, on_delete=models.CASCADE, related_name='reservations')
+    lavage       = models.ForeignKey(Lavage, on_delete=models.CASCADE, related_name='reservation')
+    date_passage = models.DateField()
+    heure_passage = models.TimeField()
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # Une seule réservation par créneau (date + heure)
+        unique_together = ('date_passage', 'heure_passage')
+        ordering = ['date_passage', 'heure_passage']
+
+    def __str__(self):
+        return f"{self.utilisateur.pseudo} — {self.date_passage} à {self.heure_passage}"

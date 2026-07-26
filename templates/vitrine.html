@@ -21,57 +21,491 @@
 
 {% endblock %}
 {% block header %}
-<!-- Le contenu spécifique à chaque page sera inséré ici -->
+<!-- ═══════════════════════════════════════════════════════════
+     HEADER — Wash Wallet Online
+     Remplacer uniquement ce bloc dans vitrine.html
+     Style cohérent avec le reste du site (Montserrat, #1734a3)
+════════════════════════════════════════════════════════════ -->
 
-<!-- Start Header Navbar Area -->
-<header id="Automobile-theme-menu" class="Automobile-theme-menu-header-navber-area" Style="background-color: rgb(239, 232, 251);">
-    <div style="background-color: rgb(239, 232, 251);height: 10px;width: 100%;"></div>
-    <nav class="navbar navbar-b navbar-trans navbar-expand-lg" id="mainNav">
-       
-        <div class="container" >
-            <!-- <a class="navbar-brand js-scroll" href="index.html"> -->
-            <img src="{% static 'assets/images/logo.png' %}" class="white-logo" alt="logo">
-      
-        <button class="navbar-toggler collapsed" type="button" data-toggle="collapse" data-target="#navbarDefault" aria-controls="navbarDefault" aria-expanded="false" aria-label="Toggle navigation"> <span></span>  <span></span>  <span></span> 
-        </button>
-            <div class="navbar-collapse collapse justify-content-end" id="navbarDefault">
-                <ul class="navbar-nav" >
-                    <li class="nav-item"><a class="nav-link js-scroll active" href="#slider-home" style="color: rgb(81, 138, 244);" >Accueil</a></li>
-                    <!-- <li class="nav-item"><a class="nav-link js-scroll" href="#about">About</a></li> -->
-                    <li class="nav-item"><a class="nav-link js-scroll" href="#services" style="color: rgb(81, 138, 244);">Services</a></li>
-                    <li class="nav-item"><a class="nav-link js-scroll" href="#products" style="color: rgb(81, 138, 244);">Produits</a></li>
-                    <!-- <li class="nav-item"><a class="nav-link js-scroll" href="#packages">Packages</a></li> -->
-                    <li class="nav-item"><a class="nav-link js-scroll" href="#packages" style="color: rgb(81, 138, 244);">Forfait</a></li>
-                    <li class="nav-item"><a class="nav-link js-scroll" href="#review" style="color: rgb(81, 138, 244);">Revues</a></li>
-                    
-                    {% if not user.is_authenticated %}  <li class="nav-item">    <a class="connect nav-link js-scroll" href="{% url 'inscription' %}" style="color: white;background-color:  rgb(81, 138, 244);">Se Connecter</a></li>
-                    {% else %}
-                    <li class="nav-item" style="text-align: center;border: 1px dotted rgb(81, 138, 244);">
-                        <div class="dropdown" >
-                            <a class="btn  dropdown-toggle" style="height:5px;color: gray;" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
-                           <span style="size: 10px;font-weight: bold;">Actions</span> 
-                            </a>
-                        
-                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuLink" style="margin-top: 0px;">
-                            <li><a class="dropdown-item" href="{% url 'create-account' email=user.email %}" >Souscription Lavage</a></li>
-                            <li><a class="dropdown-item" href="#" data-toggle="modal" data-target="#rechargeModal">Recharge Compte</a></li>
-                            <li><a class="dropdown-item" href="{% url 'profil' %}">Mon compte</a></li>
-                            <li><a class="dropdown-item" href="{% url 'logout_view' %}"><ion-icon name="log-out"></ion-icon> Deconnexion</a></li>
-                            </ul>
-                        </div>
-                    </li>
-                   
-                    {% endif %}
-                    <!-- <li class="nav-item"><a class="nav-link js-scroll" href="#contact">Contact</a></li> -->
-                   
-                </ul>
-                
+<style>
+    /* ── Variables et reset header ──────────────────────────── */
+    :root {
+        --ww-primary:   #1734a3;
+        --ww-primary2:  #1248c8;
+        --ww-dark:      #0d1f6e;
+        --ww-white:     #ffffff;
+        --ww-light:     rgba(255,255,255,0.88);
+        --ww-muted:     rgba(255,255,255,0.55);
+        --ww-accent:    #FFC107;
+        --ww-h:         76px;
+    }
+
+    /* ── Barre supérieure ───────────────────────────────────── */
+    .ww-topbar {
+        background: var(--ww-dark);
+        padding: 7px 0;
+        font-size: 13px;
+        font-family: 'Montserrat', sans-serif;
+    }
+    .ww-topbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .ww-topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+    .ww-topbar-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--ww-muted);
+        font-size: 12.5px;
+        font-weight: 500;
+    }
+    .ww-topbar-item i { color: var(--ww-accent); font-size: 13px; }
+    .ww-topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .ww-topbar-social a {
+        color: var(--ww-muted);
+        font-size: 13px;
+        transition: color 0.2s;
+        margin-left: 8px;
+    }
+    .ww-topbar-social a:hover { color: var(--ww-accent); }
+
+    /* ── Navbar principale ──────────────────────────────────── */
+    .ww-navbar {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: var(--ww-white);
+        border-bottom: 3px solid var(--ww-primary);
+        box-shadow: 0 2px 20px rgba(23,52,163,0.10);
+        transition: box-shadow 0.3s;
+        font-family: 'Montserrat', sans-serif;
+    }
+    .ww-navbar.scrolled {
+        box-shadow: 0 4px 28px rgba(23,52,163,0.18);
+    }
+    .ww-navbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: var(--ww-h);
+        gap: 16px;
+    }
+
+    /* Logo */
+    .ww-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none !important;
+        flex-shrink: 0;
+    }
+    .ww-logo img {
+        height: 48px;
+        width: auto;
+        object-fit: contain;
+    }
+    .ww-logo-text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1;
+    }
+    .ww-logo-name {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--ww-primary);
+        letter-spacing: 0.5px;
+    }
+    .ww-logo-sub {
+        font-size: 10px;
+        font-weight: 500;
+        color: #888;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    /* Nav links */
+    .ww-nav {
+        display: flex;
+        align-items: center;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        gap: 4px;
+    }
+    .ww-nav li a.ww-link {
+        display: block;
+        padding: 8px 14px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #444;
+        border-radius: 6px;
+        transition: color 0.2s, background 0.2s;
+        text-decoration: none !important;
+        white-space: nowrap;
+        letter-spacing: 0.2px;
+    }
+    .ww-nav li a.ww-link:hover,
+    .ww-nav li a.ww-link.active {
+        color: var(--ww-primary);
+        background: rgba(23,52,163,0.06);
+    }
+
+    /* Dropdown */
+    .ww-dropdown {
+        position: relative;
+    }
+    .ww-dropdown-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        color: #444;
+        font-size: 14px;
+        font-weight: 600;
+        transition: color 0.2s, background 0.2s;
+        text-decoration: none !important;
+        white-space: nowrap;
+    }
+    .ww-dropdown-toggle:hover { color: var(--ww-primary); background: rgba(23,52,163,0.06); }
+    .ww-dropdown-toggle .ww-avatar {
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--ww-primary), #4a90e2);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .ww-dropdown-menu {
+        display: none;
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        min-width: 220px;
+        background: #fff;
+        border: 1px solid rgba(23,52,163,0.12);
+        border-radius: 10px;
+        box-shadow: 0 8px 32px rgba(23,52,163,0.15);
+        padding: 6px;
+        z-index: 200;
+    }
+    .ww-dropdown:hover .ww-dropdown-menu,
+    .ww-dropdown.open .ww-dropdown-menu { display: block; }
+    .ww-dropdown-menu a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 7px;
+        font-size: 13.5px;
+        font-weight: 500;
+        color: #444;
+        text-decoration: none !important;
+        transition: background 0.15s, color 0.15s;
+    }
+    .ww-dropdown-menu a:hover { background: rgba(23,52,163,0.06); color: var(--ww-primary); }
+    .ww-dropdown-menu a i { width: 18px; text-align: center; color: var(--ww-primary); font-size: 14px; }
+    .ww-dropdown-menu .ww-menu-divider {
+        height: 1px;
+        background: rgba(23,52,163,0.08);
+        margin: 4px 8px;
+    }
+    .ww-dropdown-menu a.danger { color: #dc3545; }
+    .ww-dropdown-menu a.danger:hover { background: #fff5f5; color: #dc3545; }
+    .ww-dropdown-menu a.danger i { color: #dc3545; }
+
+    /* Solde badge dans dropdown */
+    .ww-solde-badge {
+        background: rgba(23,52,163,0.06);
+        border-radius: 7px;
+        padding: 10px 12px;
+        margin-bottom: 4px;
+    }
+    .ww-solde-label { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+    .ww-solde-value { font-size: 18px; font-weight: 700; color: var(--ww-primary); font-family: 'Montserrat', sans-serif; }
+
+    /* Bouton connexion (non connecté) */
+    .ww-btn-connect {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 20px;
+        background: var(--ww-primary);
+        color: #fff !important;
+        border-radius: 8px;
+        font-size: 13.5px;
+        font-weight: 700;
+        text-decoration: none !important;
+        transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+        box-shadow: 0 3px 14px rgba(23,52,163,0.30);
+        white-space: nowrap;
+        letter-spacing: 0.3px;
+    }
+    .ww-btn-connect:hover {
+        background: var(--ww-primary2);
+        transform: translateY(-1px);
+        box-shadow: 0 5px 20px rgba(23,52,163,0.40);
+        color: #fff !important;
+    }
+
+    /* Hamburger */
+    .ww-toggler {
+        display: none;
+        flex-direction: column;
+        gap: 5px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 6px;
+        transition: background 0.15s;
+    }
+    .ww-toggler:hover { background: rgba(23,52,163,0.06); }
+    .ww-toggler span {
+        display: block;
+        width: 24px; height: 2.5px;
+        background: var(--ww-primary);
+        border-radius: 99px;
+        transition: transform 0.2s;
+    }
+
+    /* Mobile nav */
+    .ww-mobile-nav {
+        display: none;
+        background: #fff;
+        border-top: 1px solid rgba(23,52,163,0.1);
+        padding: 12px 16px 16px;
+    }
+    .ww-mobile-nav.open { display: block; }
+    .ww-mobile-nav a {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 12px;
+        border-radius: 7px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #444;
+        text-decoration: none !important;
+        transition: background 0.15s, color 0.15s;
+    }
+    .ww-mobile-nav a:hover { background: rgba(23,52,163,0.06); color: var(--ww-primary); }
+    .ww-mobile-nav a i { width: 20px; text-align: center; color: var(--ww-primary); }
+    .ww-mobile-nav .ww-mobile-divider { height: 1px; background: rgba(23,52,163,0.08); margin: 6px 0; }
+    .ww-mobile-nav a.danger { color: #dc3545; }
+    .ww-mobile-nav a.danger i { color: #dc3545; }
+
+    /* ── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 991px) {
+        .ww-nav, .ww-nav-actions { display: none !important; }
+        .ww-toggler { display: flex; }
+        .ww-topbar-left .ww-topbar-item:not(:first-child) { display: none; }
+    }
+    @media (max-width: 576px) {
+        .ww-topbar { display: none; }
+    }
+</style>
+
+<!-- Barre supérieure -->
+<div class="ww-topbar">
+    <div class="container">
+        <div class="ww-topbar-inner">
+            <div class="ww-topbar-left">
+                <div class="ww-topbar-item">
+                    <i class="fa fa-phone"></i>
+                    <span>+237 671 817 484</span>
+                </div>
+                <div class="ww-topbar-item">
+                    <i class="fa fa-envelope-o"></i>
+                    <span>sime.appolos@icloud.com</span>
+                </div>
+                <div class="ww-topbar-item">
+                    <i class="fa fa-clock-o"></i>
+                    <span>Lun – Sam : 7h00 – 19h00</span>
+                </div>
             </div>
-            
+            <div class="ww-topbar-right">
+                <div class="ww-topbar-social">
+                    <a href="#"><i class="fa fa-facebook"></i></a>
+                    <a href="#"><i class="fa fa-twitter"></i></a>
+                    <a href="#"><i class="fa fa-instagram"></i></a>
+                </div>
+            </div>
         </div>
+    </div>
+</div>
 
-    </nav>
-    {% endblock %}
+<!-- Navbar principale -->
+<nav class="ww-navbar" id="wwNavbar">
+    <div class="container">
+        <div class="ww-navbar-inner">
+
+            <!-- Logo -->
+            <a href="{% url 'vitrine' %}" class="ww-logo">
+                <img src="{% static 'assets/images/logo.png' %}" alt="Wash Wallet">
+                <div class="ww-logo-text">
+                    <span class="ww-logo-name">WashWallet</span>
+                    <span class="ww-logo-sub">Paiement en ligne</span>
+                </div>
+            </a>
+
+            <!-- Nav desktop -->
+            <ul class="ww-nav" id="wwNav">
+                <li><a class="ww-link active js-scroll" href="#slider-home">Accueil</a></li>
+                <li><a class="ww-link js-scroll" href="#services">Services</a></li>
+                <li><a class="ww-link js-scroll" href="#products">Produits</a></li>
+                <li><a class="ww-link js-scroll" href="#packages">Forfaits</a></li>
+                <li><a class="ww-link js-scroll" href="#gallery">Galerie</a></li>
+                <li><a class="ww-link js-scroll" href="#review">Avis</a></li>
+                <li><a class="ww-link js-scroll" href="#contact">Contact</a></li>
+            </ul>
+
+            <!-- Actions desktop -->
+            <div class="ww-nav-actions" style="display:flex; align-items:center; gap:10px;">
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'inscription' %}" class="ww-btn-connect">
+                        <i class="fa fa-user-circle"></i>
+                        Se connecter
+                    </a>
+                {% else %}
+                    <!-- Dropdown utilisateur connecté -->
+                    <div class="ww-dropdown" id="wwUserDropdown">
+                        <div class="ww-dropdown-toggle">
+                            <div class="ww-avatar" id="navAvatar">{{ user.pseudo|first|upper }}</div>
+                            <span style="max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ user.pseudo }}</span>
+                            <i class="fa fa-angle-down" style="font-size:12px; color:#999;"></i>
+                        </div>
+                        <div class="ww-dropdown-menu">
+                            <!-- Solde -->
+                            <div class="ww-solde-badge">
+                                <div class="ww-solde-label">Solde du compte</div>
+                                <div class="ww-solde-value" id="navSolde">Chargement…</div>
+                            </div>
+                            <!-- Actions -->
+                            <a href="{% url 'create-account' email=user.email %}">
+                                <i class="fa fa-tint"></i> Souscrire un lavage
+                            </a>
+                            <a href="#" data-toggle="modal" data-target="#rechargeModal">
+                                <i class="fa fa-wallet"></i> Recharger le compte
+                            </a>
+                            <a href="{% url 'profil' %}">
+                                <i class="fa fa-user"></i> Mon compte
+                            </a>
+                            <div class="ww-menu-divider"></div>
+                            <a href="{% url 'logout_view' %}" class="danger">
+                                <i class="fa fa-sign-out"></i> Déconnexion
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Hamburger mobile -->
+            <button class="ww-toggler" id="wwToggler" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Menu mobile -->
+    <div class="ww-mobile-nav" id="wwMobileNav">
+        <a href="#slider-home" class="js-scroll"><i class="fa fa-home"></i> Accueil</a>
+        <a href="#services" class="js-scroll"><i class="fa fa-wrench"></i> Services</a>
+        <a href="#products" class="js-scroll"><i class="fa fa-shopping-bag"></i> Produits</a>
+        <a href="#packages" class="js-scroll"><i class="fa fa-list-alt"></i> Forfaits</a>
+        <a href="#gallery" class="js-scroll"><i class="fa fa-photo"></i> Galerie</a>
+        <a href="#review" class="js-scroll"><i class="fa fa-star"></i> Avis</a>
+        <a href="#contact" class="js-scroll"><i class="fa fa-envelope"></i> Contact</a>
+        <div class="ww-mobile-divider"></div>
+        {% if not user.is_authenticated %}
+            <a href="{% url 'inscription' %}" style="background:rgba(23,52,163,0.06); color: #1734a3; font-weight:700;">
+                <i class="fa fa-user-circle"></i> Se connecter / S'inscrire
+            </a>
+        {% else %}
+            <a href="{% url 'create-account' email=user.email %}"><i class="fa fa-tint"></i> Souscrire un lavage</a>
+            <a href="#" data-toggle="modal" data-target="#rechargeModal"><i class="fa fa-wallet"></i> Recharger le compte</a>
+            <a href="{% url 'profil' %}"><i class="fa fa-user"></i> Mon compte</a>
+            <div class="ww-mobile-divider"></div>
+            <a href="{% url 'logout_view' %}" class="danger"><i class="fa fa-sign-out"></i> Déconnexion</a>
+        {% endif %}
+    </div>
+</nav>
+
+<script>
+    // ── Hamburger toggle ─────────────────────────────────────
+    document.getElementById('wwToggler').addEventListener('click', function () {
+        var menu = document.getElementById('wwMobileNav');
+        menu.classList.toggle('open');
+    });
+
+    // ── Fermer menu mobile au clic sur un lien ───────────────
+    document.querySelectorAll('.ww-mobile-nav a').forEach(function (link) {
+        link.addEventListener('click', function () {
+            document.getElementById('wwMobileNav').classList.remove('open');
+        });
+    });
+
+    // ── Shadow au scroll ─────────────────────────────────────
+    window.addEventListener('scroll', function () {
+        var navbar = document.getElementById('wwNavbar');
+        if (window.scrollY > 40) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
+
+    // ── Dropdown click (fallback mobile) ────────────────────
+    var dropdown = document.getElementById('wwUserDropdown');
+    if (dropdown) {
+        dropdown.querySelector('.ww-dropdown-toggle').addEventListener('click', function (e) {
+            if (window.innerWidth <= 991) {
+                dropdown.classList.toggle('open');
+                e.stopPropagation();
+            }
+        });
+        document.addEventListener('click', function () {
+            dropdown.classList.remove('open');
+        });
+    }
+
+    // ── Charger le solde dans le dropdown ────────────────────
+    {% if user.is_authenticated %}
+    (function loadSolde() {
+        fetch('/profil_solde_json/')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var el = document.getElementById('navSolde');
+                if (el && data.solde !== undefined) {
+                    el.textContent = parseInt(data.solde).toLocaleString('fr-FR') + ' XAF';
+                }
+            })
+            .catch(function() {
+                var el = document.getElementById('navSolde');
+                if (el) el.textContent = '— XAF';
+            });
+    })();
+    {% endif %}
+</script>
+
+{% endblock %}
 {% block content %}
 <!-- Le contenu spécifique à chaque page sera inséré ici -->
 
