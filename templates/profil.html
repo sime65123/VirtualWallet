@@ -433,8 +433,8 @@
             <button class="ww-tab-btn" data-tab="tab-password">
                 <i class="fa fa-lock"></i> Mot de passe
             </button>
-            <button class="ww-tab-btn" data-tab="tab-reservation" style="position:relative;">
-                <i class="fa fa-clock-o"></i> Programmer un lavage
+            <button class="ww-tab-btn" data-tab="tab-reservation">
+                <i class="fa fa-calendar"></i> Programmer un lavage
             </button>
             <button class="ww-tab-btn" data-tab="tab-mes-reservations">
                 <i class="fa fa-list"></i> Mes réservations
@@ -545,7 +545,7 @@
         <div class="ww-pane" id="tab-reservation">
             <div class="ww-card">
                 <div class="ww-card-head">
-                    <div class="ww-card-title"><i class="fa fa-calendar-plus-o"></i> Programmer l'heure de votre passage</div>
+                    <div class="ww-card-title"><i class="fa fa-clock-o"></i> Programmer l'heure de votre passage</div>
                 </div>
                 <div class="ww-card-body">
                     <div class="ww-alert ww-alert-warning">
@@ -704,7 +704,6 @@ for (var h = 7; h <= 18; h++) {
 
 var creneauSelectionne = null;
 
-// ── Nouveau ──
 document.getElementById('btnVoirCreneaux').addEventListener('click', function() {
     var date = document.getElementById('reservDate').value;
 
@@ -759,7 +758,6 @@ document.getElementById('btnVoirCreneaux').addEventListener('click', function() 
 });
 
 // ── Confirmer réservation ──────────────────────────────────
-// ── Nouveau ──
 document.getElementById('btnConfirmerReserv').addEventListener('click', function() {
     var date = document.getElementById('reservDate').value;
     var btn  = this;

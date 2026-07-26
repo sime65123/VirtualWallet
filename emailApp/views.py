@@ -571,11 +571,11 @@ def creneaux_disponibles(request):
     return JsonResponse({'reserves': reserves_list})
 
 
-@login_required
+@csrf_exempt
 @require_http_methods(["POST"])
 def reserver_horaire(request):
     if not request.user.is_authenticated:
-        return JsonResponse({'erreur': 'Non connecté'}, status=401)
+        return JsonResponse({'erreur': 'Non connecté.'}, status=401)
     try:
         data          = json.loads(request.body)
         date_passage  = data.get('date_passage')
@@ -584,7 +584,7 @@ def reserver_horaire(request):
         if not date_passage or not heure_passage:
             return JsonResponse({'erreur': 'Date ou heure manquante.'}, status=400)
 
-        # Vérifier que le créneau est libre
+        # Vérifier que le créneau (date + heure) est libre
         if ReservationHoraire.objects.filter(
             date_passage=date_passage,
             heure_passage=heure_passage
@@ -643,5 +643,3 @@ def mes_reservations(request):
     } for r in reservations]
     
     return JsonResponse({'reservations': data})
-
-
