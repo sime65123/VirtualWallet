@@ -4,7 +4,7 @@ from django.utils.http import urlsafe_base64_decode
 from datetime import datetime
 from django.shortcuts import render, redirect
 from .forms import InscriptionForm
-from .models import Utilisateur
+from .models import Utilisateur, Lavage
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
@@ -73,7 +73,11 @@ def create_view(request, email):
         )
 
         if has_send:
-            
+            # Enregistrer le lavage en base de données
+            Lavage.objects.create(
+                codeQR=code_chiffre,
+                utilisateur=compte.utilisateur
+            )
             cxt = {"msg": "mail envoyee avec success"}
             return render(request, 'email.html', context)
         else:
