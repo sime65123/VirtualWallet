@@ -20,6 +20,10 @@ urlpatterns = [
     path('creneaux/', views.creneaux_disponibles, name='creneaux_disponibles'),
     path('reserver/', views.reserver_horaire, name='reserver_horaire'),
     path('mes_reservations/', views.mes_reservations, name='mes_reservations'),
+    
+    
+    path('transaction/notification/', views.cinetpay_notification, name='cinetpay_notification'),
+    path('transaction/retour/', views.transaction_retour, name='transaction_retour'),
 
    
 

@@ -177,85 +177,100 @@ from .forms import TransactionForm
 from django.contrib import messages
 import requests
 
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+import json as json_module
+
 def initier_transaction(request):
     if request.method == 'POST':
-        form = TransactionForm(request.POST)
-        if form.is_valid():
-            transaction = form.save(commit=False)
-            transaction.utilisateur = request.user
+        numero_emetteur = request.POST.get('numero_emetteur', '').strip()
+        montant_str     = request.POST.get('montant', '0').strip()
 
-              # Obtenir le temps actuel en microsecondes
-            timestamp = datetime.now().strftime('%Y%m%d%H%M%S%f')
+        try:
+            montant = int(float(montant_str))
+        except ValueError:
+            messages.error(request, "Montant invalide.")
+            return redirect('profil')
 
-            # Générer un nombre aléatoire et le convertir en chaîne de caractères
-            random_number = str(random.randint(0, 999999))
+        # Arrondir au multiple de 5 (exigence CinetPay)
+        montant = (montant // 5) * 5
+        if montant < 100:
+            messages.error(request, "Le montant minimum est de 100 XAF.")
+            return redirect('profil')
 
-            # Concaténer le timestamp et le nombre aléatoire pour obtenir un identifiant unique
-            unique_number = timestamp + random_number
+        # Générer un identifiant unique
+        timestamp     = datetime.now().strftime('%Y%m%d%H%M%S%f')
+        random_number = str(random.randint(0, 999999))
+        transaction_id = timestamp + random_number
 
-            transaction.transaction_id=unique_number
-            #transaction.save()
-                # Appel API Cinetpay pour initier le paiement
-            response = requests.post('https://api-checkout.cinetpay.com/v2/payment', data={
-                'apikey': '161273709566393b12aa9b90.88553027',
-                'site_id': '5871717',
-                'transaction_id': transaction.transaction_id,
-                'currency': 'XAF',
-                'description': 'Dépôt sur compte',
-                'amount': transaction.montant,      
-                'channels': 'ALL',
-                #Fournir ces variables pour le paiements par carte bancaire
-                'customer_name': transaction.utilisateur.pseudo ,      
-                'customer_email': transaction.utilisateur.email,
-                'customer_phone_number': '+237'+transaction.numero_emetteur,
-                'customer_address' : "",
-                'customer_city': transaction.utilisateur.ville_residence,
-                'customer_country' : "CM",
-                'customer_state' : "CM",
-                'customer_zip_code' : "", 
-                'return_url': request.build_absolute_uri('/transaction/retour/'),
-                'notify_url': request.build_absolute_uri('/transaction/notification/')
-            })
-            print("-------------------------------------------------------"+str(response.json()))#659070872
+        # Enregistrer la transaction en attente
+        transaction = Transaction.objects.create(
+            utilisateur     = request.user,
+            montant         = montant,
+            numero_emetteur = numero_emetteur,
+            transaction_id  = transaction_id,
+            statut          = 'En attente'
+        )
 
+        # Appel API CinetPay — JSON obligatoire depuis la mise à jour
+        payload = {
+            'apikey':      '161273709566393b12aa9b90.88553027',
+            'site_id':     '5871717',
+            'transaction_id': transaction_id,
+            'amount':      montant,
+            'currency':    'XAF',
+            'description': f'Recharge compte Wash Wallet — {request.user.pseudo}',
+            'channels':    'ALL',
+            'lang':        'fr',
+            'metadata':    str(request.user.pk),
+            # Infos client (nécessaires pour la carte bancaire)
+            'customer_name':         request.user.pseudo,
+            'customer_surname':      request.user.pseudo,
+            'customer_email':        request.user.email,
+            'customer_phone_number': '+237' + numero_emetteur,
+            'customer_address':      '',
+            'customer_city':         request.user.ville_residence,
+            'customer_country':      'CM',
+            'customer_state':        'CM',
+            'customer_zip_code':     '',
+            # URLs de retour — doivent être absolues et accessibles depuis internet
+            'return_url': request.build_absolute_uri('/emailApp/transaction/retour/'),
+            'notify_url': request.build_absolute_uri('/emailApp/transaction/notification/'),
+        }
 
+        try:
+            response = requests.post(
+                'https://api-checkout.cinetpay.com/v2/payment',
+                json=payload,           # ← JSON, pas form-data
+                headers={'Content-Type': 'application/json'},
+                timeout=15
+            )
+            response_data = response.json()
 
-
-    #         response2 = requests.post('https://api-checkout.cinetpay.com/v2/payment/check', json={
-    #         'apikey': '161273709566393b12aa9b90.88553027',
-    #         'site_id': '5871717',
-    #         'transaction_id': transaction.transaction_id,
-    #     })
-
-    #     if response2.status_code == 200:
-    #         transaction_data = response2.json()
-    #         if transaction_data['code'] == '00':  # Vérifiez si la transaction est réussie
-    #             # Mettez à jour le statut de la transaction dans votre base de données
-    #             # ...
-    #             return HttpResponse('Transaction réussie et confirmée.')
-    #         else:
-    #             return HttpResponse('Échec de la transaction.', status=400)
-    #     else:
-    #         return HttpResponse('Erreur lors de la vérification de la transaction.', status=500)
-    # return HttpResponse('Méthode non autorisée.', status=405)
-
-            if response.status_code == 200:
-                # Rediriger l'utilisateur vers la page de paiement Cinetpay
-                subject = "Activation reussi"
-                receivers = [transaction.utilisateur.email]
-                template = "email.html"  # Assurez-vous que ce template existe dans votre dossier de templates
-                context = {
-                    'variable1': 'valeur1',
-                    'variable2': 'valeur2',
-                    # ... autres variables de contexte ...
-                }
-                return redirect(response.json()['data']['payment_url'])
-            
-
+            if response_data.get('code') == '201':
+                # Succès → rediriger vers le guichet CinetPay
+                payment_url = response_data['data']['payment_url']
+                return redirect(payment_url)
             else:
-                messages.error(request, "Erreur lors de l'initiation du paiement.")
-    else:
-        form = TransactionForm()
+                # Erreur CinetPay
+                err_msg = response_data.get('description', 'Erreur CinetPay inconnue.')
+                transaction.statut = 'Échec'
+                transaction.save()
+                messages.error(request, f"Paiement refusé : {err_msg}")
+                return redirect('profil')
+
+        except requests.exceptions.ConnectionError:
+            transaction.statut = 'Échec'
+            transaction.save()
+            messages.error(request, "Impossible de contacter CinetPay. Vérifiez votre connexion.")
+            return redirect('profil')
+
+        except Exception as e:
+            transaction.statut = 'Échec'
+            transaction.save()
+            messages.error(request, f"Erreur technique : {str(e)}")
+            return redirect('profil')
+
     return redirect('vitrine')
 
 
@@ -268,29 +283,63 @@ from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
 def cinetpay_notification(request):
-    if request.method == 'POST':
-        # Parsez le JSON reçu de CinetPay
-        data = json.loads(request.body)
-        transaction_id = data.get('transaction_id')
+    """Webhook appelé par CinetPay après chaque paiement."""
+    if request.method != 'POST':
+        return HttpResponse('Méthode non autorisée.', status=405)
 
-        # Vérifiez le statut de la transaction avec l'API de CinetPay
-        response = requests.post('https://api-checkout.cinetpay.com/v2/payment/check', json={
-            'apikey': 'votre_apikey',
-            'site_id': 'votre_site_id',
-            'transaction_id': transaction_id,
-        })
+    try:
+        data = json_module.loads(request.body)
+    except Exception:
+        data = request.POST.dict()
 
-        if response.status_code == 200:
-            transaction_data = response.json()
-            if transaction_data['code'] == '00':  # Vérifiez si la transaction est réussie
-                # Mettez à jour le statut de la transaction dans votre base de données
-                # ...
-                return HttpResponse('Transaction réussie et confirmée.')
-            else:
-                return HttpResponse('Échec de la transaction.', status=400)
-        else:
-            return HttpResponse('Erreur lors de la vérification de la transaction.', status=500)
-    return HttpResponse('Méthode non autorisée.', status=405)
+    transaction_id = data.get('cpm_trans_id') or data.get('transaction_id')
+    if not transaction_id:
+        return HttpResponse('transaction_id manquant.', status=400)
+
+    # Vérifier le statut auprès de CinetPay
+    try:
+        check = requests.post(
+            'https://api-checkout.cinetpay.com/v2/payment/check',
+            json={
+                'apikey':         '161273709566393b12aa9b90.88553027',
+                'site_id':        '5871717',
+                'transaction_id': transaction_id,
+            },
+            headers={'Content-Type': 'application/json'},
+            timeout=15
+        )
+        check_data = check.json()
+    except Exception as e:
+        return HttpResponse(f'Erreur vérification : {e}', status=500)
+
+    if check_data.get('code') == '00':
+        # Paiement confirmé — créditer le compte
+        try:
+            transaction = Transaction.objects.get(transaction_id=transaction_id)
+            if transaction.statut != 'Succès':
+                transaction.statut = 'Succès'
+                transaction.save()
+                compte = Compte.objects.get(utilisateur=transaction.utilisateur)
+                compte.crediter(transaction.montant)
+        except Transaction.DoesNotExist:
+            pass
+        return HttpResponse('OK', status=200)
+    else:
+        try:
+            transaction = Transaction.objects.get(transaction_id=transaction_id)
+            transaction.statut = 'Échec'
+            transaction.save()
+        except Transaction.DoesNotExist:
+            pass
+        return HttpResponse('Paiement non confirmé.', status=200)
+
+
+@csrf_exempt
+def transaction_retour(request):
+    """Page de retour après paiement CinetPay."""
+    transaction_id = request.GET.get('transaction_id') or request.POST.get('cpm_trans_id', '')
+    messages.success(request, "Votre paiement est en cours de traitement. Votre solde sera mis à jour dans quelques instants.")
+    return redirect('profil')
 
 
 

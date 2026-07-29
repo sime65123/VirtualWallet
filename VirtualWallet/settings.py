@@ -27,8 +27,9 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = True
 
 
-ALLOWED_HOSTS = ['testserver', 'localhost', '127.0.0.1','192.168.8.100','192.168.30.35','4b83-129-0-103-69.ngrok-free.app','24b0-129-0-103-68.ngrok-free.app','2d92-129-0-80-185.ngrok-free.app','192.168.88.35']
-CSRF_TRUSTED_ORIGINS = ['https://2d92-129-0-80-185.ngrok-free.app']
+ALLOWED_HOSTS = ['testserver', 'localhost', '127.0.0.1','192.168.8.100','192.168.30.35','https://nebulizer-vagrancy-ragweed.ngrok-free.dev','24b0-129-0-103-68.ngrok-free.app','2d92-129-0-80-185.ngrok-free.app','192.168.88.35']
+CSRF_TRUSTED_ORIGINS = ['https://nebulizer-vagrancy-ragweed.ngrok-free.dev']
+# CSRF_TRUSTED_ORIGINS = ['https://2d92-129-0-80-185.ngrok-free.app']
 
 
 
