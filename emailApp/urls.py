@@ -22,6 +22,7 @@ urlpatterns = [
     path('mes_reservations/', views.mes_reservations, name='mes_reservations'),
     
     
+    path('paiement/', views.page_paiement_cinetpay, name='page_paiement_cinetpay'),
     path('transaction/notification/', views.cinetpay_notification, name='cinetpay_notification'),
     path('transaction/retour/', views.transaction_retour, name='transaction_retour'),
 

@@ -192,18 +192,16 @@ def initier_transaction(request):
             messages.error(request, "Montant invalide.")
             return redirect('profil')
 
-        # Arrondir au multiple de 5 (exigence CinetPay)
         montant = (montant // 5) * 5
         if montant < 100:
             messages.error(request, "Le montant minimum est de 100 XAF.")
             return redirect('profil')
 
-        # Générer un identifiant unique
-        timestamp     = datetime.now().strftime('%Y%m%d%H%M%S%f')
-        random_number = str(random.randint(0, 999999))
+        timestamp      = datetime.now().strftime('%Y%m%d%H%M%S%f')
+        random_number  = str(random.randint(0, 999999))
         transaction_id = timestamp + random_number
 
-        # Enregistrer la transaction en attente
+        # On enregistre la transaction en attente
         transaction = Transaction.objects.create(
             utilisateur     = request.user,
             montant         = montant,
@@ -212,66 +210,43 @@ def initier_transaction(request):
             statut          = 'En attente'
         )
 
-        # Appel API CinetPay — JSON obligatoire depuis la mise à jour
-        payload = {
-            'apikey':      '161273709566393b12aa9b90.88553027',
-            'site_id':     '5871717',
-            'transaction_id': transaction_id,
-            'amount':      montant,
-            'currency':    'XAF',
-            'description': f'Recharge compte Wash Wallet — {request.user.pseudo}',
-            'channels':    'ALL',
-            'lang':        'fr',
-            'metadata':    str(request.user.pk),
-            # Infos client (nécessaires pour la carte bancaire)
-            'customer_name':         request.user.pseudo,
-            'customer_surname':      request.user.pseudo,
-            'customer_email':        request.user.email,
-            'customer_phone_number': '+237' + numero_emetteur,
-            'customer_address':      '',
-            'customer_city':         request.user.ville_residence,
-            'customer_country':      'CM',
-            'customer_state':        'CM',
-            'customer_zip_code':     '',
-            # URLs de retour — doivent être absolues et accessibles depuis internet
-            'return_url': request.build_absolute_uri('/emailApp/transaction/retour/'),
-            'notify_url': request.build_absolute_uri('/emailApp/transaction/notification/'),
-        }
-
-        try:
-            response = requests.post(
-                'https://api-checkout.cinetpay.com/v2/payment',
-                json=payload,           # ← JSON, pas form-data
-                headers={'Content-Type': 'application/json'},
-                timeout=15
-            )
-            response_data = response.json()
-
-            if response_data.get('code') == '201':
-                # Succès → rediriger vers le guichet CinetPay
-                payment_url = response_data['data']['payment_url']
-                return redirect(payment_url)
-            else:
-                # Erreur CinetPay
-                err_msg = response_data.get('description', 'Erreur CinetPay inconnue.')
-                transaction.statut = 'Échec'
-                transaction.save()
-                messages.error(request, f"Paiement refusé : {err_msg}")
-                return redirect('profil')
-
-        except requests.exceptions.ConnectionError:
-            transaction.statut = 'Échec'
-            transaction.save()
-            messages.error(request, "Impossible de contacter CinetPay. Vérifiez votre connexion.")
-            return redirect('profil')
-
-        except Exception as e:
-            transaction.statut = 'Échec'
-            transaction.save()
-            messages.error(request, f"Erreur technique : {str(e)}")
-            return redirect('profil')
+        # On redirige vers la page de paiement avec les paramètres
+        request.session['pending_transaction_id'] = transaction_id
+        request.session['pending_montant']        = montant
+        request.session['pending_numero']         = numero_emetteur
+        return redirect('page_paiement_cinetpay')
 
     return redirect('vitrine')
+
+
+
+
+def page_paiement_cinetpay(request):
+    transaction_id = request.session.get('pending_transaction_id')
+    montant        = request.session.get('pending_montant')
+    numero         = request.session.get('pending_numero')
+
+    if not transaction_id:
+        messages.error(request, "Session expirée. Veuillez recommencer.")
+        return redirect('profil')
+
+    notify_url = 'https://nebulizer-vagrancy-ragweed.ngrok-free.dev/emailApp/transaction/notification/'
+    return_url = 'https://nebulizer-vagrancy-ragweed.ngrok-free.dev/emailApp/transaction/retour/'
+
+    context = {
+        'transaction_id': transaction_id,
+        'montant':        montant,
+        'numero':         numero,
+        'notify_url':     notify_url,
+        'return_url':     return_url,
+        'apikey':         '161273709566393b12aa9b90.88553027',
+        'site_id':        '5871717',
+        'user_email':     request.user.email,
+        'user_name':      request.user.pseudo,
+        'user_phone':     '+237' + (numero or ''),
+        'user_city':      request.user.ville_residence,
+    }
+    return render(request, 'paiement_cinetpay.html', context)
 
 
 
@@ -283,16 +258,23 @@ from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
 def cinetpay_notification(request):
-    """Webhook appelé par CinetPay après chaque paiement."""
+    """Webhook appelé par CinetPay après confirmation du paiement."""
     if request.method != 'POST':
         return HttpResponse('Méthode non autorisée.', status=405)
 
     try:
-        data = json_module.loads(request.body)
+        data = json.loads(request.body)
     except Exception:
         data = request.POST.dict()
 
-    transaction_id = data.get('cpm_trans_id') or data.get('transaction_id')
+    # Le SDK Seamless envoie cpm_trans_id
+    transaction_id = (
+        data.get('cpm_trans_id') or
+        data.get('transaction_id') or
+        data.get('transactionId') or
+        ''
+    )
+
     if not transaction_id:
         return HttpResponse('transaction_id manquant.', status=400)
 
@@ -313,7 +295,6 @@ def cinetpay_notification(request):
         return HttpResponse(f'Erreur vérification : {e}', status=500)
 
     if check_data.get('code') == '00':
-        # Paiement confirmé — créditer le compte
         try:
             transaction = Transaction.objects.get(transaction_id=transaction_id)
             if transaction.statut != 'Succès':
@@ -337,8 +318,10 @@ def cinetpay_notification(request):
 @csrf_exempt
 def transaction_retour(request):
     """Page de retour après paiement CinetPay."""
-    transaction_id = request.GET.get('transaction_id') or request.POST.get('cpm_trans_id', '')
-    messages.success(request, "Votre paiement est en cours de traitement. Votre solde sera mis à jour dans quelques instants.")
+    messages.success(
+        request,
+        "Votre paiement est en cours de traitement. Votre solde sera mis à jour dans quelques instants."
+    )
     return redirect('profil')
 
 

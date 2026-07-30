@@ -1,0 +1,332 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paiement — Wash Wallet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script src="https://cdn.cinetpay.com/seamless/main.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary: #1734a3;
+            --dark:    #0d1f6e;
+            --accent:  #FFC107;
+            --green:   #28a745;
+            --white:   #ffffff;
+            --bg:      #f4f6fb;
+            --text:    #333333;
+            --border:  #e8ecf4;
+        }
+        html, body {
+            min-height: 100vh;
+            font-family: 'Montserrat', sans-serif;
+            background: var(--bg);
+        }
+
+        /* ── Topbar ─── */
+        .topbar { background: var(--dark); padding: 7px 0; }
+        .topbar .inner {
+            max-width: 900px; margin: 0 auto; padding: 0 24px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .tp-item { display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.55); font-size: 12.5px; }
+        .tp-item i { color: var(--accent); }
+
+        /* ── Navbar ─── */
+        .navbar {
+            background: var(--white);
+            border-bottom: 3px solid var(--primary);
+            box-shadow: 0 2px 12px rgba(23,52,163,0.08);
+        }
+        .navbar .inner {
+            max-width: 900px; margin: 0 auto; padding: 0 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            height: 68px;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .brand img { height: 42px; object-fit: contain; }
+        .brand-name { font-size: 16px; font-weight: 800; color: var(--primary); }
+        .brand-sub  { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.08em; }
+
+        /* ── Page ─── */
+        .page {
+            max-width: 520px;
+            margin: 44px auto 60px;
+            padding: 0 20px;
+        }
+
+        /* ── Récapitulatif ─── */
+        .recap-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: 0 2px 16px rgba(23,52,163,0.08);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .recap-head {
+            background: linear-gradient(135deg, var(--primary), var(--dark));
+            padding: 20px 24px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .recap-head-icon {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: #fff;
+        }
+        .recap-head-title { font-size: 16px; font-weight: 700; color: #fff; }
+        .recap-head-sub   { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 2px; }
+        .recap-body { padding: 22px 24px; }
+        .recap-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 13.5px;
+        }
+        .recap-row:last-child { border-bottom: none; }
+        .recap-label { color: #888; }
+        .recap-value { font-weight: 600; color: var(--text); }
+        .recap-amount {
+            font-size: 32px; font-weight: 800;
+            color: var(--primary); text-align: center;
+            padding: 16px 0 8px;
+        }
+        .recap-currency { font-size: 15px; font-weight: 600; color: #aaa; }
+
+        /* ── Bouton paiement ─── */
+        .btn-pay {
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), #0e40c0);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 15px; font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(23,52,163,0.35);
+            transition: all 0.2s;
+            margin-bottom: 14px;
+        }
+        .btn-pay:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(23,52,163,0.45); }
+        .btn-pay:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+        .btn-pay .spinner {
+            display: none;
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .btn-cancel {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%;
+            padding: 12px;
+            background: var(--white);
+            color: #888;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px; font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .btn-cancel:hover { border-color: #ccc; color: var(--text); }
+
+        /* ── Infos sécurité ─── */
+        .security-note {
+            display: flex; align-items: center; gap: 8px;
+            background: #e8f8f0;
+            border: 1px solid #b2dfc5;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px; color: #1a7a42;
+            margin-top: 16px;
+        }
+        .security-note i { color: var(--green); font-size: 14px; flex-shrink: 0; }
+
+        /* ── Logos opérateurs ─── */
+        .operators {
+            display: flex; align-items: center; justify-content: center;
+            gap: 16px; margin-top: 16px; flex-wrap: wrap;
+        }
+        .op-badge {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 14px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 12px; font-weight: 600; color: var(--text);
+        }
+        .op-badge.orange { border-color: rgba(255,130,0,0.3); }
+        .op-badge.mtn    { border-color: rgba(255,193,7,0.4); }
+        .op-orange { width: 10px; height: 10px; border-radius: 50%; background: #FF8200; }
+        .op-mtn    { width: 10px; height: 10px; border-radius: 50%; background: #FFB800; }
+
+        /* ── Résultat paiement ─── */
+        #paymentResult { margin-top: 16px; }
+        .alert-ww {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 13px 15px;
+            border-radius: 9px;
+            font-size: 13px; font-weight: 500;
+        }
+        .alert-ww i { font-size: 16px; flex-shrink: 0; }
+        .alert-success { background: #e8f8f0; border: 1px solid #b2dfc5; color: #1a7a42; }
+        .alert-success i { color: var(--green); }
+        .alert-danger  { background: #fdeaea; border: 1px solid #f5b7b1; color: #a01428; }
+        .alert-danger i { color: #dc3545; }
+    </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div class="inner">
+        <div class="tp-item"><i class="fa fa-phone"></i><span>+237 671 817 484</span></div>
+        <div class="tp-item"><i class="fa fa-clock-o"></i><span>Lun–Sam : 7h–19h</span></div>
+    </div>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="inner">
+        <a href="{% url 'vitrine' %}" class="brand">
+            <img src="{% static 'assets/images/logo.png' %}" alt="Wash Wallet">
+            <div>
+                <div class="brand-name">WashWallet</div>
+                <div class="brand-sub">Paiement en ligne</div>
+            </div>
+        </a>
+    </div>
+</nav>
+
+<!-- Contenu -->
+<div class="page">
+
+    <!-- Récapitulatif -->
+    <div class="recap-card">
+        <div class="recap-head">
+            <div class="recap-head-icon"><i class="fa fa-credit-card"></i></div>
+            <div>
+                <div class="recap-head-title">Recharge de compte</div>
+                <div class="recap-head-sub">Confirmez votre paiement ci-dessous</div>
+            </div>
+        </div>
+        <div class="recap-body">
+            <div class="recap-amount">
+                {{ montant|floatformat:0 }} <span class="recap-currency">XAF</span>
+            </div>
+            <div class="recap-row">
+                <span class="recap-label">Compte Wash Wallet</span>
+                <span class="recap-value">{{ user_email }}</span>
+            </div>
+            <div class="recap-row">
+                <span class="recap-label">Numéro émetteur</span>
+                <span class="recap-value">{{ numero }}</span>
+            </div>
+            <div class="recap-row">
+                <span class="recap-label">Référence transaction</span>
+                <span class="recap-value" style="font-size:11px; color:#aaa;">{{ transaction_id }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bouton paiement -->
+    <button class="btn-pay" id="payBtn" onclick="lancerPaiement()">
+        <i class="fa fa-lock"></i>
+        <span id="payBtnText">Payer {{ montant|floatformat:0 }} XAF</span>
+        <div class="spinner" id="paySpinner"></div>
+    </button>
+
+    <a href="{% url 'profil' %}" class="btn-cancel">
+        <i class="fa fa-arrow-left"></i> Annuler et retourner au profil
+    </a>
+
+    <!-- Opérateurs acceptés -->
+    <div class="operators">
+        <div class="op-badge orange"><div class="op-orange"></div> Orange Money</div>
+        <div class="op-badge mtn"><div class="op-mtn"></div> MTN Mobile Money</div>
+    </div>
+
+    <div class="security-note">
+        <i class="fa fa-shield"></i>
+        Paiement sécurisé par CinetPay. Vos données bancaires ne sont jamais stockées sur nos serveurs.
+    </div>
+
+    <!-- Résultat -->
+    <div id="paymentResult"></div>
+
+</div>
+
+<script>
+    function lancerPaiement() {
+        var btn    = document.getElementById('payBtn');
+        var txt    = document.getElementById('payBtnText');
+        var spin   = document.getElementById('paySpinner');
+
+        btn.disabled   = true;
+        txt.style.display  = 'none';
+        spin.style.display = 'block';
+
+        CinetPay.setConfig({
+            apikey:   '{{ apikey }}',
+            site_id:  {{ site_id }},
+            notify_url: '{{ notify_url }}',
+            return_url: '{{ return_url }}',
+            mode: 'PRODUCTION'
+        });
+
+        CinetPay.getCheckout({
+            transaction_id:       '{{ transaction_id }}',
+            amount:               {{ montant }},
+            currency:             'XAF',
+            channels:             'MOBILE_MONEY',
+            description:          'Recharge compte Wash Wallet',
+            customer_name:        '{{ user_name }}',
+            customer_surname:     '{{ user_name }}',
+            customer_email:       '{{ user_email }}',
+            customer_phone_number:'{{ user_phone }}',
+            customer_address:     '',
+            customer_city:        '{{ user_city }}',
+            customer_country:     'CM',
+            customer_state:       'CM',
+            customer_zip_code:    ''
+        });
+
+        CinetPay.waitResponse(function(data) {
+            btn.disabled   = false;
+            txt.style.display  = 'block';
+            spin.style.display = 'none';
+
+            var result = document.getElementById('paymentResult');
+            if (data.status === 'ACCEPTED') {
+                result.innerHTML = '<div class="alert-ww alert-success"><i class="fa fa-check-circle"></i><span>Paiement confirmé ! Votre solde sera mis à jour dans quelques instants. <a href="/emailApp/profil" style="color:inherit;font-weight:700;">Retour au profil →</a></span></div>';
+            } else {
+                result.innerHTML = '<div class="alert-ww alert-danger"><i class="fa fa-times-circle"></i><span>Paiement non complété (statut : ' + data.status + '). Veuillez réessayer.</span></div>';
+                btn.disabled = false;
+            }
+        });
+
+        CinetPay.onError(function(data) {
+            btn.disabled   = false;
+            txt.style.display  = 'block';
+            spin.style.display = 'none';
+            document.getElementById('paymentResult').innerHTML =
+                '<div class="alert-ww alert-danger"><i class="fa fa-exclamation-circle"></i><span>Erreur CinetPay : ' + (data.description || 'Erreur inconnue') + '</span></div>';
+        });
+    }
+</script>
+
+</body>
+</html>
