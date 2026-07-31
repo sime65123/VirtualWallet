@@ -249,6 +249,115 @@ def page_paiement_cinetpay(request):
     return render(request, 'paiement_cinetpay.html', context)
 
 
+@csrf_exempt
+def cinetpay_get_token():
+    """Obtenir un token JWT CinetPay via la nouvelle API v1."""
+    auth_resp = requests.post(
+        'https://api.cinetpay.net/v1/oauth/login',
+        json={
+            'api_key':      'sk_test_itegSRFaJcODwCfCTgpCsWVs',
+            'api_password': 'Appolos123.',
+        },
+        headers={'Content-Type': 'application/json'},
+        timeout=15
+    )
+    auth_data = auth_resp.json()
+    if auth_data.get('code') == 200:
+        return auth_data['access_token']
+    raise Exception(f"Auth CinetPay échouée : {auth_data}")
+
+
+@csrf_exempt
+def initier_paiement_ajax(request):
+    """Vue AJAX — obtient un token JWT, initie le paiement v1 et renvoie le payment_url."""
+    if request.method != 'POST':
+        return JsonResponse({'erreur': 'Méthode non autorisée.'}, status=405)
+
+    if not request.user.is_authenticated:
+        return JsonResponse({'erreur': 'Non connecté.'}, status=401)
+
+    try:
+        data           = json.loads(request.body)
+        transaction_id = data.get('transaction_id')
+        if not transaction_id:
+            return JsonResponse({'erreur': 'transaction_id manquant.'}, status=400)
+
+        transaction = Transaction.objects.get(
+            transaction_id=transaction_id,
+            utilisateur=request.user
+        )
+    except Transaction.DoesNotExist:
+        return JsonResponse({'erreur': 'Transaction introuvable.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'erreur': str(e)}, status=500)
+
+    NGROK = 'https://nebulizer-vagrancy-ragweed.ngrok-free.dev'
+    notify_url  = f'{NGROK}/emailApp/transaction/notification/'
+    success_url = f'{NGROK}/emailApp/transaction/retour/'
+    failed_url  = f'{NGROK}/emailApp/transaction/retour/'
+
+    try:
+        # Étape 1 : authentification
+        token = cinetpay_get_token()
+
+        # Étape 2 : initier le paiement
+        payload = {
+            'site_id':                 'cammerimmo',
+            'merchant_transaction_id': transaction_id,
+            'amount':                  int(transaction.montant),
+            'currency':                'XAF',
+            'designation':             f'Recharge Wash Wallet — {request.user.pseudo}',
+            'success_url':             success_url,
+            'failed_url':              failed_url,
+            'notify_url':              notify_url,
+            'channels':                'ALL',
+            'lang':                    'fr',
+            'customer_name':           request.user.pseudo,
+            'customer_surname':        request.user.pseudo,
+            'customer_email':          request.user.email,
+            'customer_phone_number':   '+237' + (transaction.numero_emetteur or ''),
+            'customer_address':        '',
+            'customer_city':           request.user.ville_residence,
+            'customer_country':        'CM',
+            'customer_state':          'CM',
+            'customer_zip_code':       '',
+        }
+
+        pay_resp  = requests.post(
+            'https://api.cinetpay.net/v1/payment',
+            json=payload,
+            headers={
+                'Content-Type':  'application/json',
+                'Authorization': f'Bearer {token}',
+            },
+            timeout=15
+        )
+        pay_data = pay_resp.json()
+
+        # La v1 renvoie payment_token + details séparés
+        payment_token = pay_data.get('payment_token')
+        details       = pay_data.get('details', {})
+        detail_code   = details.get('code')
+
+        if payment_token and detail_code not in (1004,):
+            payment_url = f'https://checkout.cinetpay.com/payment/{payment_token}'
+            return JsonResponse({'payment_url': payment_url})
+        else:
+            # Extraire l'erreur précise
+            if details.get('errors'):
+                err = ' | '.join([f"{k}: {v}" for k, v in details['errors'].items()])
+            else:
+                err = details.get('message') or pay_data.get('description', 'Erreur CinetPay.')
+            transaction.statut = 'Échec'
+            transaction.save()
+            return JsonResponse({'erreur': err})
+
+    except requests.exceptions.ConnectionError:
+        return JsonResponse({'erreur': 'Impossible de contacter CinetPay. Vérifiez votre connexion réseau.'})
+    except Exception as e:
+        return JsonResponse({'erreur': str(e)})
+
+
 
 
 import json
@@ -258,7 +367,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 @csrf_exempt
 def cinetpay_notification(request):
-    """Webhook appelé par CinetPay après confirmation du paiement."""
+    """Webhook CinetPay — vérifie et crédite le compte si paiement confirmé."""
     if request.method != 'POST':
         return HttpResponse('Méthode non autorisée.', status=405)
 
@@ -267,34 +376,39 @@ def cinetpay_notification(request):
     except Exception:
         data = request.POST.dict()
 
-    # Le SDK Seamless envoie cpm_trans_id
+    # La v1 envoie merchant_transaction_id ou transaction_id
     transaction_id = (
-        data.get('cpm_trans_id') or
+        data.get('merchant_transaction_id') or
         data.get('transaction_id') or
-        data.get('transactionId') or
+        data.get('cpm_trans_id') or
         ''
     )
+    notify_token = data.get('notify_token', '')
 
     if not transaction_id:
         return HttpResponse('transaction_id manquant.', status=400)
 
-    # Vérifier le statut auprès de CinetPay
+    # Vérifier le statut auprès de CinetPay v1
     try:
-        check = requests.post(
-            'https://api-checkout.cinetpay.com/v2/payment/check',
-            json={
-                'apikey':         '161273709566393b12aa9b90.88553027',
-                'site_id':        '5871717',
-                'transaction_id': transaction_id,
+        token = cinetpay_get_token()
+        check = requests.get(
+            f'https://api.cinetpay.net/v1/payment/{transaction_id}/status',
+            headers={
+                'Authorization': f'Bearer {token}',
+                'Content-Type':  'application/json',
             },
-            headers={'Content-Type': 'application/json'},
             timeout=15
         )
         check_data = check.json()
+        print("CinetPay notification check:", check_data)
     except Exception as e:
         return HttpResponse(f'Erreur vérification : {e}', status=500)
 
-    if check_data.get('code') == '00':
+    # Statut confirmé si code 200 et status ACCEPTED ou PAID
+    statut = check_data.get('status', '')
+    code   = check_data.get('code', 0)
+
+    if code == 200 and statut in ('ACCEPTED', 'PAID', 'OK'):
         try:
             transaction = Transaction.objects.get(transaction_id=transaction_id)
             if transaction.statut != 'Succès':
@@ -308,8 +422,9 @@ def cinetpay_notification(request):
     else:
         try:
             transaction = Transaction.objects.get(transaction_id=transaction_id)
-            transaction.statut = 'Échec'
-            transaction.save()
+            if transaction.statut != 'Succès':
+                transaction.statut = 'Échec'
+                transaction.save()
         except Transaction.DoesNotExist:
             pass
         return HttpResponse('Paiement non confirmé.', status=200)
