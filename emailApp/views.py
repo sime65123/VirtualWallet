@@ -333,21 +333,26 @@ def initier_paiement_ajax(request):
             timeout=15
         )
         pay_data = pay_resp.json()
+        print("CinetPay pay response:", pay_data)
 
-        # La v1 renvoie payment_token + details séparés
+        # La réponse v1 met payment_token au niveau racine
+        # et details contient les erreurs éventuelles
         payment_token = pay_data.get('payment_token')
         details       = pay_data.get('details', {})
-        detail_code   = details.get('code')
+        detail_errors = details.get('errors', {})
 
-        if payment_token and detail_code not in (1004,):
+        if payment_token and not detail_errors:
+            # Succès — construire l'URL de paiement
             payment_url = f'https://checkout.cinetpay.com/payment/{payment_token}'
             return JsonResponse({'payment_url': payment_url})
+        elif detail_errors:
+            # Erreurs de validation sur certains champs
+            err = ' | '.join([f"{k}: {v}" for k, v in detail_errors.items()])
+            transaction.statut = 'Échec'
+            transaction.save()
+            return JsonResponse({'erreur': f'Paramètres invalides : {err}'})
         else:
-            # Extraire l'erreur précise
-            if details.get('errors'):
-                err = ' | '.join([f"{k}: {v}" for k, v in details['errors'].items()])
-            else:
-                err = details.get('message') or pay_data.get('description', 'Erreur CinetPay.')
+            err = details.get('message') or pay_data.get('message', 'Erreur CinetPay inconnue.')
             transaction.statut = 'Échec'
             transaction.save()
             return JsonResponse({'erreur': err})
