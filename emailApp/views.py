@@ -409,41 +409,25 @@ def cinetpay_notification(request):
         print(f"Transaction non trouvée: merchant_id={merchant_id}, cinetpay_id={cinetpay_id}")
         return HttpResponse('Transaction non trouvée.', status=404)
 
-    # Vérifier le statut auprès de CinetPay v1
-    try:
-        token = cinetpay_get_token()
-        check = requests.post(
-            'https://api.cinetpay.net/v1/payment/check',
-            json={
-                'transaction_id': cinetpay_id or merchant_id,
-                'site_id': 'cammerimmo',
-            },
-            headers={
-                'Authorization': f'Bearer {token}',
-                'Content-Type': 'application/json',
-            },
-            timeout=15
-        )
-        check_data = check.json()
-        print("CinetPay check response:", check_data)
-    except Exception as e:
-        print(f"Erreur check CinetPay: {e}")
-        check_data = {}
+    # La notification CinetPay v1 envoie directement le statut dans son payload
+    # 'status': 200 = succès, 'code': 100 = paiement reçu
+    # On se fie d'abord à la notification directe — plus fiable que l'API de check
+    notif_code   = data.get('code', 0)
+    notif_status = data.get('status', 0)
 
-    check_status = check_data.get('status', '') or str(check_data.get('data', {}).get('status', ''))
-    notif_status = data.get('status', '') or data.get('payment_status', '')
-    final_status = check_status or notif_status
+    # CinetPay v1 : code=100 + status=200 = paiement confirmé
+    is_success = (notif_code == 100 and notif_status == 200)
 
-    print(f"Statut final: {final_status}")
+    print(f"Notification - code: {notif_code}, status: {notif_status}, is_success: {is_success}")
 
-    if final_status in ('SUCCESS', 'ACCEPTED', 'PAID', 'OK', '00'):
+    if is_success:
         if transaction.statut != 'Succès':
             transaction.statut = 'Succès'
             transaction.save()
             try:
                 compte = Compte.objects.get(utilisateur=transaction.utilisateur)
                 compte.crediter(transaction.montant)
-                print(f"Compte crédité de {transaction.montant} XAF")
+                print(f"Compte crédité de {transaction.montant} XAF pour {transaction.utilisateur.email}")
             except Compte.DoesNotExist:
                 print("Compte non trouvé")
         return HttpResponse('OK', status=200)
@@ -451,16 +435,84 @@ def cinetpay_notification(request):
         if transaction.statut != 'Succès':
             transaction.statut = 'Échec'
             transaction.save()
+        print(f"Paiement non confirmé - code: {notif_code}, status: {notif_status}")
         return HttpResponse('Paiement non confirmé.', status=200)
 
 
 @csrf_exempt
 def transaction_retour(request):
-    """Page de retour après paiement CinetPay."""
-    messages.success(
-        request,
-        "Votre paiement est en cours de traitement. Votre solde sera mis à jour dans quelques instants."
-    )
+    """Page de retour après paiement CinetPay — vérifie et crédite si succès."""
+    # CinetPay peut envoyer le transaction_id en GET ou POST
+    cinetpay_id  = request.GET.get('transaction_id') or request.POST.get('transaction_id', '')
+    merchant_id  = request.GET.get('merchant_transaction_id') or request.POST.get('merchant_transaction_id', '')
+
+    print(f"Retour CinetPay: cinetpay_id={cinetpay_id}, merchant_id={merchant_id}")
+    print(f"GET params: {dict(request.GET)}")
+
+    # Chercher la transaction la plus récente en attente de cet utilisateur
+    transaction = None
+    if merchant_id:
+        try:
+            transaction = Transaction.objects.get(transaction_id=merchant_id)
+        except Transaction.DoesNotExist:
+            pass
+    if not transaction and cinetpay_id:
+        try:
+            transaction = Transaction.objects.get(transaction_id=cinetpay_id)
+        except Transaction.DoesNotExist:
+            pass
+    if not transaction and request.user.is_authenticated:
+        # Prendre la dernière transaction en attente de l'utilisateur
+        transaction = Transaction.objects.filter(
+            utilisateur=request.user,
+            statut='En attente'
+        ).order_by('-date_transaction').first()
+
+    if transaction and transaction.statut == 'En attente':
+        # Vérifier le statut auprès de CinetPay
+        try:
+            token = cinetpay_get_token()
+            check_id = cinetpay_id or merchant_id or transaction.transaction_id
+            check = requests.post(
+                'https://api.cinetpay.net/v1/payment/check',
+                json={
+                    'transaction_id': check_id,
+                    'site_id': 'cammerimmo',
+                },
+                headers={
+                    'Authorization': f'Bearer {token}',
+                    'Content-Type': 'application/json',
+                },
+                timeout=15
+            )
+            check_data = check.json()
+            print(f"Retour check CinetPay: {check_data}")
+
+            # Extraire le statut à tous les niveaux possibles
+            status_top  = str(check_data.get('status', ''))
+            status_data = str(check_data.get('data', {}).get('status', '') if isinstance(check_data.get('data'), dict) else '')
+            final = status_top or status_data
+            print(f"Statut retour: {final}")
+
+            if final in ('SUCCESS', 'ACCEPTED', 'PAID', 'OK', '00', 'PAYMENT_MADE', 'TRANSACTION_SUCCESS'):
+                transaction.statut = 'Succès'
+                transaction.save()
+                try:
+                    compte = Compte.objects.get(utilisateur=transaction.utilisateur)
+                    compte.crediter(transaction.montant)
+                    print(f"Compte crédité de {transaction.montant} XAF (via retour)")
+                    messages.success(request, f"Paiement confirmé ! Votre compte a été crédité de {int(transaction.montant)} XAF.")
+                except Compte.DoesNotExist:
+                    messages.success(request, "Paiement reçu. Votre solde sera mis à jour dans quelques instants.")
+            else:
+                messages.warning(request, "Votre paiement est en cours de traitement. Votre solde sera mis à jour dans quelques instants.")
+
+        except Exception as e:
+            print(f"Erreur vérification retour: {e}")
+            messages.info(request, "Votre paiement est en cours de traitement. Revenez dans quelques instants.")
+    else:
+        messages.info(request, "Redirection après paiement. Vérifiez votre solde.")
+
     return redirect('profil')
 
 
