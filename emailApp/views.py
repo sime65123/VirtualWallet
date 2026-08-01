@@ -334,18 +334,22 @@ def initier_paiement_ajax(request):
         pay_data = pay_resp.json()
         print("CinetPay pay response:", pay_data)
 
-        # La réponse v1 met payment_token au niveau racine
-        # et details contient les erreurs éventuelles
+        # La réponse v1 fournit directement payment_url
+        payment_url   = pay_data.get('payment_url')
         payment_token = pay_data.get('payment_token')
         details       = pay_data.get('details', {})
         detail_errors = details.get('errors', {})
+        detail_status = details.get('status', '')
 
-        if payment_token and not detail_errors:
-            # Succès — construire l'URL de paiement
-            payment_url = f'https://checkout.cinetpay.com/payment/{payment_token}'
+        # Si doit être redirigé ET qu'on a une URL — succès
+        must_redirect = details.get('must_be_redirected', False)
+
+        if payment_url and (must_redirect or detail_status == 'INITIATED'):
+            return JsonResponse({'payment_url': payment_url})
+        elif payment_url and payment_token:
+            # Cas où must_be_redirected est absent mais on a quand même l'URL
             return JsonResponse({'payment_url': payment_url})
         elif detail_errors:
-            # Erreurs de validation sur certains champs
             err = ' | '.join([f"{k}: {v}" for k, v in detail_errors.items()])
             transaction.statut = 'Échec'
             transaction.save()
@@ -380,57 +384,73 @@ def cinetpay_notification(request):
     except Exception:
         data = request.POST.dict()
 
-    # La v1 envoie merchant_transaction_id ou transaction_id
-    transaction_id = (
-        data.get('merchant_transaction_id') or
-        data.get('transaction_id') or
-        data.get('cpm_trans_id') or
-        ''
-    )
+    print("CinetPay notification reçue:", data)
+
+    merchant_id  = data.get('merchant_transaction_id', '')
+    cinetpay_id  = data.get('transaction_id', '')
     notify_token = data.get('notify_token', '')
 
-    if not transaction_id:
+    if not merchant_id and not cinetpay_id:
         return HttpResponse('transaction_id manquant.', status=400)
+
+    # Chercher la transaction par merchant_transaction_id en priorité
+    transaction = None
+    if merchant_id:
+        try:
+            transaction = Transaction.objects.get(transaction_id=merchant_id)
+        except Transaction.DoesNotExist:
+            pass
+    if not transaction and cinetpay_id:
+        try:
+            transaction = Transaction.objects.get(transaction_id=cinetpay_id)
+        except Transaction.DoesNotExist:
+            pass
+    if not transaction:
+        print(f"Transaction non trouvée: merchant_id={merchant_id}, cinetpay_id={cinetpay_id}")
+        return HttpResponse('Transaction non trouvée.', status=404)
 
     # Vérifier le statut auprès de CinetPay v1
     try:
         token = cinetpay_get_token()
-        check = requests.get(
-            f'https://api.cinetpay.net/v1/payment/{transaction_id}/status',
+        check = requests.post(
+            'https://api.cinetpay.net/v1/payment/check',
+            json={
+                'transaction_id': cinetpay_id or merchant_id,
+                'site_id': 'cammerimmo',
+            },
             headers={
                 'Authorization': f'Bearer {token}',
-                'Content-Type':  'application/json',
+                'Content-Type': 'application/json',
             },
             timeout=15
         )
         check_data = check.json()
-        print("CinetPay notification check:", check_data)
+        print("CinetPay check response:", check_data)
     except Exception as e:
-        return HttpResponse(f'Erreur vérification : {e}', status=500)
+        print(f"Erreur check CinetPay: {e}")
+        check_data = {}
 
-    # Statut confirmé si code 200 et status ACCEPTED ou PAID
-    statut = check_data.get('status', '')
-    code   = check_data.get('code', 0)
+    check_status = check_data.get('status', '') or str(check_data.get('data', {}).get('status', ''))
+    notif_status = data.get('status', '') or data.get('payment_status', '')
+    final_status = check_status or notif_status
 
-    if code == 200 and statut in ('ACCEPTED', 'PAID', 'OK'):
-        try:
-            transaction = Transaction.objects.get(transaction_id=transaction_id)
-            if transaction.statut != 'Succès':
-                transaction.statut = 'Succès'
-                transaction.save()
+    print(f"Statut final: {final_status}")
+
+    if final_status in ('SUCCESS', 'ACCEPTED', 'PAID', 'OK', '00'):
+        if transaction.statut != 'Succès':
+            transaction.statut = 'Succès'
+            transaction.save()
+            try:
                 compte = Compte.objects.get(utilisateur=transaction.utilisateur)
                 compte.crediter(transaction.montant)
-        except Transaction.DoesNotExist:
-            pass
+                print(f"Compte crédité de {transaction.montant} XAF")
+            except Compte.DoesNotExist:
+                print("Compte non trouvé")
         return HttpResponse('OK', status=200)
     else:
-        try:
-            transaction = Transaction.objects.get(transaction_id=transaction_id)
-            if transaction.statut != 'Succès':
-                transaction.statut = 'Échec'
-                transaction.save()
-        except Transaction.DoesNotExist:
-            pass
+        if transaction.statut != 'Succès':
+            transaction.statut = 'Échec'
+            transaction.save()
         return HttpResponse('Paiement non confirmé.', status=200)
 
 
