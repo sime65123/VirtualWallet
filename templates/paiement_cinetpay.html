@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <script src="https://cdn.cinetpay.com/seamless/main.js"></script>
+    
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
@@ -271,60 +271,55 @@
 
 <script>
     function lancerPaiement() {
-        var btn    = document.getElementById('payBtn');
-        var txt    = document.getElementById('payBtnText');
-        var spin   = document.getElementById('paySpinner');
+        var btn  = document.getElementById('payBtn');
+        var txt  = document.getElementById('payBtnText');
+        var spin = document.getElementById('paySpinner');
 
-        btn.disabled   = true;
+        btn.disabled       = true;
         txt.style.display  = 'none';
         spin.style.display = 'block';
 
-        CinetPay.setConfig({
-            apikey:   '{{ apikey }}',
-            site_id:  {{ site_id }},
-            notify_url: '{{ notify_url }}',
-            return_url: '{{ return_url }}',
-            mode: 'PRODUCTION'
-        });
-
-        CinetPay.getCheckout({
-            transaction_id:       '{{ transaction_id }}',
-            amount:               {{ montant }},
-            currency:             'XAF',
-            channels:             'MOBILE_MONEY',
-            description:          'Recharge compte Wash Wallet',
-            customer_name:        '{{ user_name }}',
-            customer_surname:     '{{ user_name }}',
-            customer_email:       '{{ user_email }}',
-            customer_phone_number:'{{ user_phone }}',
-            customer_address:     '',
-            customer_city:        '{{ user_city }}',
-            customer_country:     'CM',
-            customer_state:       'CM',
-            customer_zip_code:    ''
-        });
-
-        CinetPay.waitResponse(function(data) {
-            btn.disabled   = false;
-            txt.style.display  = 'block';
-            spin.style.display = 'none';
-
-            var result = document.getElementById('paymentResult');
-            if (data.status === 'ACCEPTED') {
-                result.innerHTML = '<div class="alert-ww alert-success"><i class="fa fa-check-circle"></i><span>Paiement confirmé ! Votre solde sera mis à jour dans quelques instants. <a href="/emailApp/profil" style="color:inherit;font-weight:700;">Retour au profil →</a></span></div>';
+        fetch('/emailApp/initier_paiement_ajax/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                transaction_id: '{{ transaction_id }}'
+            })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.payment_url) {
+                window.location.href = data.payment_url;
             } else {
-                result.innerHTML = '<div class="alert-ww alert-danger"><i class="fa fa-times-circle"></i><span>Paiement non complété (statut : ' + data.status + '). Veuillez réessayer.</span></div>';
-                btn.disabled = false;
+                btn.disabled       = false;
+                txt.style.display  = 'block';
+                spin.style.display = 'none';
+                document.getElementById('paymentResult').innerHTML =
+                    '<div class="alert-ww alert-danger"><i class="fa fa-times-circle"></i><span>'
+                    + (data.erreur || 'Erreur inconnue.') + '</span></div>';
             }
-        });
-
-        CinetPay.onError(function(data) {
-            btn.disabled   = false;
+        })
+        .catch(function() {
+            btn.disabled       = false;
             txt.style.display  = 'block';
             spin.style.display = 'none';
             document.getElementById('paymentResult').innerHTML =
-                '<div class="alert-ww alert-danger"><i class="fa fa-exclamation-circle"></i><span>Erreur CinetPay : ' + (data.description || 'Erreur inconnue') + '</span></div>';
+                '<div class="alert-ww alert-danger"><i class="fa fa-exclamation-circle"></i>'
+                + '<span>Erreur réseau. Vérifiez votre connexion et réessayez.</span></div>';
         });
+    }
+
+    function getCookie(name) {
+        var val = null;
+        document.cookie.split(';').forEach(function(c) {
+            c = c.trim();
+            if (c.startsWith(name + '='))
+                val = decodeURIComponent(c.substring(name.length + 1));
+        });
+        return val;
     }
 </script>
 
