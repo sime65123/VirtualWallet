@@ -249,7 +249,6 @@ def page_paiement_cinetpay(request):
     return render(request, 'paiement_cinetpay.html', context)
 
 
-@csrf_exempt
 def cinetpay_get_token():
     """Obtenir un token JWT CinetPay via la nouvelle API v1."""
     auth_resp = requests.post(
