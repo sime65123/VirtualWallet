@@ -23,6 +23,7 @@ urlpatterns = [
     
     
     path('paiement/', views.page_paiement_cinetpay, name='page_paiement_cinetpay'),
+    path('initier_paiement_ajax/', views.initier_paiement_ajax, name='initier_paiement_ajax'),
     path('transaction/notification/', views.cinetpay_notification, name='cinetpay_notification'),
     path('transaction/retour/', views.transaction_retour, name='transaction_retour'),
 
