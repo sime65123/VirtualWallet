@@ -573,49 +573,46 @@
 
 
     <!-- Modal -->
-    <div class="modal fade" id="rechargeModal" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+        <!-- Modal Recharge — style unifié Wash Wallet -->
+    <div class="modal fade" id="rechargeModal" tabindex="-1" role="dialog">
         <div class="modal-dialog modal-dialog-centered" role="document">
-          <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-              <h5 class="modal-title" id="modalLabel"><i class="fas fa-user-plus"></i> Recharge Compte</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
-                <span aria-hidden="true" class="text-white ">×</span>
-              </button>
+            <div class="modal-content" style="border-radius:12px; border:1px solid rgba(23,52,163,0.15); font-family:'Montserrat',sans-serif;">
+                <div class="modal-header" style="background:#1734a3; border-radius:12px 12px 0 0; padding:16px 20px;">
+                    <h5 class="modal-title" style="color:#fff; font-family:'Montserrat',sans-serif; font-weight:700; font-size:15px;">
+                        <i class="fa fa-plus-circle"></i> Recharger mon compte
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span style="color:#fff; font-size:20px;">×</span>
+                    </button>
+                </div>
+                <div class="modal-body" style="padding:24px;">
+                    <form method="POST" action="{% url 'page_de_chargement_compte' %}">
+                        {% csrf_token %}
+                        <div style="margin-bottom:16px;">
+                            <label style="display:block; font-size:11px; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:7px;">Numéro émetteur (Orange / MTN)</label>
+                            <input type="tel" name="numero_emetteur" placeholder="6XX XXX XXX" required
+                                style="width:100%; background:#f4f6fb; border:1px solid #e8ecf4; border-radius:8px; padding:11px 14px; font-family:'Montserrat',sans-serif; font-size:14px; color:#333; outline:none;">
+                        </div>
+                        <div style="margin-bottom:20px;">
+                            <label style="display:block; font-size:11px; font-weight:600; color:#999; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:7px;">Montant (XAF)</label>
+                            <input type="number" name="montant" placeholder="Ex: 5000" min="500" required
+                                style="width:100%; background:#f4f6fb; border:1px solid #e8ecf4; border-radius:8px; padding:11px 14px; font-family:'Montserrat',sans-serif; font-size:14px; color:#333; outline:none;">
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button type="button" data-dismiss="modal"
+                                style="flex:1; padding:11px; background:#fff; border:1px solid #e8ecf4; border-radius:8px; font-family:'Montserrat',sans-serif; font-size:13px; font-weight:600; color:#666; cursor:pointer;">
+                                Annuler
+                            </button>
+                            <button type="submit"
+                                style="flex:2; padding:11px; background:#1734a3; border:none; border-radius:8px; font-family:'Montserrat',sans-serif; font-size:13px; font-weight:700; color:#fff; cursor:pointer;">
+                                <i class="fa fa-credit-card"></i> Valider le paiement
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="modal-body">
-              <!-- Formulaire d'ajout de client -->
-              <form id="ajoutClientForm" method="POST" action="{% url 'page_de_chargement_compte' %}">
-                  {% csrf_token %}
-                <!-- Champs du formulaire avec des icônes -->
-                <div class="form-group">
-                  <div class="input-group">
-                    <div class="input-group-prepend">
-                      <span class="input-group-text"><ion-icon name="phone-landscape"></ion-icon></span>
-                    </div>
-                    <input type="text" class="form-control" id="nom" name="numero_emetteur" placeholder="Numero Emetteur" required>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <div class="input-group">
-                    <div class="input-group-prepend">
-                      <span class="input-group-text"><ion-icon name="wallet"></ion-icon></span>
-                    </div>
-                    <input type="text" class="form-control" id="montant" name="montant" placeholder="Montant" required>
-                  </div>
-                </div>
-          
-             
-                </div>
-                <!-- D'autres champs peuvent être ajoutés ici -->
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close1">Fermer</button>
-                  <button type="submit" class="btn btn-primary">Valider</button>
-                </div>
-              </form>
-            </div>
-          </div>
         </div>
-      </div>
+    </div>
       
   
 
