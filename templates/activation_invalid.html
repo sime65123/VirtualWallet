@@ -1,5 +1,246 @@
-{% extends 'base.html' %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lien invalide — Wash Wallet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary: #1734a3;
+            --dark:    #0d1f6e;
+            --accent:  #FFC107;
+            --red:     #dc3545;
+            --red-bg:  #fdeaea;
+            --red-bd:  #f5b7b1;
+            --white:   #ffffff;
+            --bg:      #f4f6fb;
+            --text:    #333333;
+            --border:  #e8ecf4;
+        }
+        html, body {
+            min-height: 100vh;
+            font-family: 'Montserrat', sans-serif;
+            background: var(--bg);
+        }
 
-{% block content %}
-<p>Le lien d'activation est invalide ou expiré. Veuillez essayer de vous inscrire à nouveau ou contactez le support.</p>
-{% endblock %}
+        /* ── Topbar ─── */
+        .topbar { background: var(--dark); padding: 7px 0; }
+        .topbar .inner {
+            max-width: 900px; margin: 0 auto; padding: 0 24px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .tp-item { display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.55); font-size: 12.5px; }
+        .tp-item i { color: var(--accent); }
+
+        /* ── Navbar ─── */
+        .navbar {
+            background: var(--white);
+            border-bottom: 3px solid var(--primary);
+            box-shadow: 0 2px 12px rgba(23,52,163,0.08);
+        }
+        .navbar .inner {
+            max-width: 900px; margin: 0 auto; padding: 0 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            height: 68px;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .brand img { height: 42px; object-fit: contain; }
+        .brand-name { font-size: 16px; font-weight: 800; color: var(--primary); }
+        .brand-sub  { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.08em; }
+        .nav-btn {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 8px 18px; background: var(--primary); color: #fff;
+            border-radius: 8px; font-size: 13px; font-weight: 600;
+            text-decoration: none; transition: background 0.2s;
+        }
+        .nav-btn:hover { background: #1248c8; color: #fff; }
+
+        /* ── Page ─── */
+        .page {
+            max-width: 520px;
+            margin: 56px auto 60px;
+            padding: 0 20px;
+        }
+
+        /* ── Carte ─── */
+        .error-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(23,52,163,0.09);
+            overflow: hidden;
+        }
+
+        .error-top {
+            background: linear-gradient(135deg, #c0392b 0%, #96281b 100%);
+            padding: 36px 28px 32px;
+            text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .error-top::before {
+            content: ''; position: absolute; top: -40px; right: -40px;
+            width: 180px; height: 180px; border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+        }
+        .error-icon {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            border: 3px solid rgba(255,255,255,0.30);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 18px;
+            font-size: 34px; color: #fff;
+            position: relative; z-index: 1;
+            animation: shake 0.5s ease both;
+        }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            20%      { transform: translateX(-6px); }
+            40%      { transform: translateX(6px); }
+            60%      { transform: translateX(-4px); }
+            80%      { transform: translateX(4px); }
+        }
+        .error-title {
+            font-size: 22px; font-weight: 800; color: #fff;
+            margin-bottom: 8px; position: relative; z-index: 1;
+        }
+        .error-sub {
+            font-size: 14px; color: rgba(255,255,255,0.75);
+            position: relative; z-index: 1;
+        }
+
+        .error-body { padding: 28px; }
+
+        .error-alert {
+            display: flex; align-items: flex-start; gap: 10px;
+            background: var(--red-bg);
+            border: 1px solid var(--red-bd);
+            border-radius: 9px;
+            padding: 13px 15px;
+            margin-bottom: 20px;
+            font-size: 13px; color: #a01428;
+            line-height: 1.6;
+        }
+        .error-alert i { color: var(--red); font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+        .info-text {
+            font-size: 13px; color: #666;
+            line-height: 1.6; margin-bottom: 24px;
+            background: var(--bg); border: 1px solid var(--border);
+            border-radius: 9px; padding: 13px 15px;
+        }
+
+        /* Boutons */
+        .btns { display: flex; flex-direction: column; gap: 10px; }
+        .btn-primary-ww {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 13px;
+            background: var(--primary); color: #fff;
+            border-radius: 10px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 14px; font-weight: 700;
+            text-decoration: none;
+            transition: all 0.2s;
+            box-shadow: 0 4px 16px rgba(23,52,163,0.28);
+        }
+        .btn-primary-ww:hover { background: #1248c8; transform: translateY(-1px); color: #fff; }
+        .btn-ghost-ww {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px;
+            background: var(--white); color: #666;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px; font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .btn-ghost-ww:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* Footer */
+        .page-footer {
+            text-align: center; margin-top: 24px;
+            font-size: 12px; color: #aaa;
+        }
+        .page-footer img { height: 24px; object-fit: contain; margin-bottom: 6px; display: block; margin-left: auto; margin-right: auto; }
+
+        @media (max-width: 576px) {
+            .topbar { display: none; }
+            .page { margin-top: 32px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+    <div class="inner">
+        <div class="tp-item"><i class="fa fa-phone"></i><span>+237 671 817 484</span></div>
+        <div class="tp-item"><i class="fa fa-clock-o"></i><span>Lun–Sam : 7h–19h</span></div>
+    </div>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="inner">
+        <a href="{% url 'vitrine' %}" class="brand">
+            <img src="{% static 'assets/images/logo.png' %}" alt="Wash Wallet">
+            <div>
+                <div class="brand-name">WashWallet</div>
+                <div class="brand-sub">Paiement en ligne</div>
+            </div>
+        </a>
+        <a href="{% url 'vitrine' %}" class="nav-btn">
+            <i class="fa fa-arrow-left"></i> Accueil
+        </a>
+    </div>
+</nav>
+
+<!-- Contenu -->
+<div class="page">
+
+    <div class="error-card">
+
+        <div class="error-top">
+            <div class="error-icon">
+                <i class="fa fa-chain-broken"></i>
+            </div>
+            <div class="error-title">Lien invalide ou expiré</div>
+            <div class="error-sub">Ce lien d'activation n'est plus utilisable</div>
+        </div>
+
+        <div class="error-body">
+
+            <div class="error-alert">
+                <i class="fa fa-exclamation-circle"></i>
+                <span>Le lien d'activation que vous avez utilisé est <strong>invalide ou a expiré</strong>. Les liens d'activation sont valables 24 heures.</span>
+            </div>
+
+            <div class="info-text">
+                Si votre compte n'est pas encore activé, vous pouvez vous réinscrire avec la même adresse e-mail. Un nouveau lien d'activation vous sera envoyé immédiatement.
+            </div>
+
+            <div class="btns">
+                <a href="{% url 'inscription' %}" class="btn-primary-ww">
+                    <i class="fa fa-user-plus"></i> Créer un nouveau compte
+                </a>
+                <a href="{% url 'vitrine' %}" class="btn-ghost-ww">
+                    <i class="fa fa-home"></i> Retour à l'accueil
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-footer">
+        <img src="{% static 'assets/images/logo.png' %}" alt="Wash Wallet">
+        © 2025 Wash Wallet — Tous droits réservés
+    </div>
+
+</div>
+
+</body>
+</html>
