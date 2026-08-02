@@ -161,13 +161,19 @@ def profil(request):
         compte = Compte.objects.create(utilisateur=user, solde=0)
         solde = 0
 
-    today = timezone.now().date()
+    today    = timezone.now().date()
     max_date = today + dt.timedelta(days=30)
 
+    # Historique des recharges
+    transactions = Transaction.objects.filter(
+        utilisateur=user
+    ).order_by('-date_transaction')
+
     return render(request, 'profil.html', {
-        'solde':    solde,
-        'today':    today.strftime('%Y-%m-%d'),
-        'max_date': max_date.strftime('%Y-%m-%d'),
+        'solde':        solde,
+        'today':        today.strftime('%Y-%m-%d'),
+        'max_date':     max_date.strftime('%Y-%m-%d'),
+        'transactions': transactions,
     })
 
 
